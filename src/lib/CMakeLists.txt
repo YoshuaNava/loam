@@ -2,6 +2,7 @@ add_library(loam
             math_utils.h
             ScanRegistration.cpp
             MultiScanRegistration.cpp
+            CtRot2DScanRegistration.cpp
             LaserOdometry.cpp
             LaserMapping.cpp
             TransformMaintenance.cpp)
