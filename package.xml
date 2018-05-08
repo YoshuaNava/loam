@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package>
-  <name>loam_velodyne</name>
+  <name>loam</name>
   <version>0.0.0</version>
 
   <description>
-    This is a ROS implementation of LOAM for Velodyne multiplane laser scanners.
+    This is a ROS implementation of LOAM for Velodyne multi-beam, as well as actuated 2D laser scanners.
     LOAM is described in the following paper:
     J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time.
       Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
@@ -19,6 +19,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
+  <build_depend>pcl_catkin</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -27,9 +28,10 @@
   
   <run_depend>geometry_msgs</run_depend>
   <run_depend>nav_msgs</run_depend>
-  <run_depend>sensor_msgs</run_depend>
+  <run_depend>pcl_catkin</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
+  <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>tf</run_depend>
 

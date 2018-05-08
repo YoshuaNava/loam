@@ -1,29 +1,39 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(loam_velodyne)
+project(loam)
+
+add_definitions(-std=c++11)
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
+  pcl_catkin
   sensor_msgs
   roscpp
   rospy
   std_msgs
-  tf)
+  tf
+  
+  QUIET
+)
 
 find_package(Eigen3 REQUIRED QUIET)
-find_package(PCL REQUIRED QUIET)
+# find_package(PCL REQUIRED QUIET)
 
 include_directories(
   include
 	${catkin_INCLUDE_DIRS} 
 	#${EIGEN3_INCLUDE_DIR}
-	${PCL_INCLUDE_DIRS})
+  # ${PCL_INCLUDE_DIRS}
+)
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs
-  DEPENDS EIGEN3 PCL
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs pcl_catkin
+  DEPENDS EIGEN3 #PCL
   INCLUDE_DIRS include
-  LIBRARIES loam
+  LIBRARIES ${PROJECT_NAME}
 )
 
 add_definitions( -march=native )
@@ -32,19 +42,22 @@ add_definitions( -march=native )
 add_subdirectory(src/lib)
 
 add_executable(multiScanRegistration src/multi_scan_registration_node.cpp)
-target_link_libraries(multiScanRegistration ${catkin_LIBRARIES} ${PCL_LIBRARIES} loam )
+target_link_libraries(multiScanRegistration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} )
 
 add_executable(ctRot2DScanRegistration src/ct_rot2d_scan_registration_node.cpp)
-target_link_libraries(ctRot2DScanRegistration ${catkin_LIBRARIES} ${PCL_LIBRARIES} loam )
+target_link_libraries(ctRot2DScanRegistration ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} )
+
+add_executable(ctRot2DOdometry src/ct_rot2d_laser_odometry_node.cpp)
+target_link_libraries(ctRot2DOdometry ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} )
 
 add_executable(laserOdometry src/laser_odometry_node.cpp)
-target_link_libraries(laserOdometry ${catkin_LIBRARIES} ${PCL_LIBRARIES} loam )
+target_link_libraries(laserOdometry ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} )
 
 add_executable(laserMapping src/laser_mapping_node.cpp)
-target_link_libraries(laserMapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} loam )
+target_link_libraries(laserMapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} )
 
 add_executable(transformMaintenance src/transform_maintenance_node.cpp)
-target_link_libraries(transformMaintenance ${catkin_LIBRARIES} ${PCL_LIBRARIES} loam )
+target_link_libraries(transformMaintenance ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} )
 
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)

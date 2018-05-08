@@ -189,7 +189,7 @@ bool LaserMapping::setup(ros::NodeHandle& node,
 
   // advertise laser mapping topics
   _pubLaserCloudSurround = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_surround", 1);
-  _pubLaserCloudFullRes = node.advertise<sensor_msgs::PointCloud2> ("/velodyne_cloud_registered", 2);
+  _pubLaserCloudFullRes = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_registered", 2);
   _pubOdomAftMapped = node.advertise<nav_msgs::Odometry> ("/aft_mapped_to_init", 5);
 
 
@@ -204,7 +204,7 @@ bool LaserMapping::setup(ros::NodeHandle& node,
       ("/laser_odom_to_init", 5, &LaserMapping::laserOdometryHandler, this);
 
   _subLaserCloudFullRes = node.subscribe<sensor_msgs::PointCloud2>
-      ("/velodyne_cloud_3", 2, &LaserMapping::laserCloudFullResHandler, this);
+      ("/laser_cloud_odom", 2, &LaserMapping::laserCloudFullResHandler, this);
 
   // subscribe to IMU topic
   _subImu = node.subscribe<sensor_msgs::Imu> ("/imu/data", 50, &LaserMapping::imuHandler, this);
@@ -1048,20 +1048,23 @@ void LaserMapping::publishResult()
 
     // accumulate map cloud
     _laserCloudSurround->clear();
-    size_t laserCloudSurroundNum = _laserCloudSurroundInd.size();
-    for (int i = 0; i < laserCloudSurroundNum; i++) {
-      size_t ind = _laserCloudSurroundInd[i];
-      *_laserCloudSurround += *_laserCloudCornerArray[ind];
-      *_laserCloudSurround += *_laserCloudSurfArray[ind];
+
+    if(_pubLaserCloudSurround.getNumSubscribers()) {
+      size_t laserCloudSurroundNum = _laserCloudSurroundInd.size();
+      for (int i = 0; i < laserCloudSurroundNum; i++) {
+        size_t ind = _laserCloudSurroundInd[i];
+        *_laserCloudSurround += *_laserCloudCornerArray[ind];
+        *_laserCloudSurround += *_laserCloudSurfArray[ind];
+      }
+
+      // down size map cloud
+      _laserCloudSurroundDS->clear();
+      _downSizeFilterCorner.setInputCloud(_laserCloudSurround);
+      _downSizeFilterCorner.filter(*_laserCloudSurroundDS);
+
+      // publish new map cloud
+      publishCloudMsg(_pubLaserCloudSurround, *_laserCloudSurroundDS, _timeLaserOdometry, "/camera_init");
     }
-
-    // down size map cloud
-    _laserCloudSurroundDS->clear();
-    _downSizeFilterCorner.setInputCloud(_laserCloudSurround);
-    _downSizeFilterCorner.filter(*_laserCloudSurroundDS);
-
-    // publish new map cloud
-    publishCloudMsg(_pubLaserCloudSurround, *_laserCloudSurroundDS, _timeLaserOdometry, "/camera_init");
   }
 
 

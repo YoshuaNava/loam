@@ -24,6 +24,23 @@ public:
   Angle rot_y;
   Angle rot_z;
   Vector3 pos;
+
+  void setZero()
+  {
+    rot_x = 0;
+    rot_y = 0;
+    rot_z = 0;
+    pos.x() = 0;
+    pos.y() = 0;
+    pos.z() = 0;
+  }
+
+  void operator=(const Twist &tw) {
+    rot_x = (tw.rot_x);
+    rot_y = (tw.rot_y);
+    rot_z = (tw.rot_z);
+    pos = (tw.pos);
+  }
 };
 
 } // end namespace loam

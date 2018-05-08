@@ -78,6 +78,8 @@ public:
 
     void setInputCloud (const PointCloudPtr &cloud, const IndicesConstPtr &indices = IndicesConstPtr ());
 
+    void setInputCloud (const PointCloudConstPtr &cloud, const IndicesConstPtr &indices = IndicesConstPtr ());
+
     int  nearestKSearch (const PointT &point, int k, std::vector<int> &k_indices,
                          std::vector<float> &k_sqr_distances) const;
 
@@ -130,6 +132,15 @@ void KdTreeFLANN<PointT>::setSortedResults(bool sorted)
 
 template<typename PointT> inline
 void KdTreeFLANN<PointT>::setInputCloud(const KdTreeFLANN::PointCloudPtr &cloud,
+                                        const IndicesConstPtr &indices)
+{
+    _adaptor.pcl = cloud;
+    _adaptor.indices = indices;
+    _kdtree.buildIndex();
+}
+
+template<typename PointT> inline
+void KdTreeFLANN<PointT>::setInputCloud(const KdTreeFLANN::PointCloudConstPtr &cloud,
                                         const IndicesConstPtr &indices)
 {
     _adaptor.pcl = cloud;

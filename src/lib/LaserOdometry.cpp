@@ -141,7 +141,7 @@ bool LaserOdometry::setup(ros::NodeHandle &node,
   // advertise laser odometry topics
   _pubLaserCloudCornerLast = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_corner_last", 2);
   _pubLaserCloudSurfLast   = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf_last", 2);
-  _pubLaserCloudFullRes    = node.advertise<sensor_msgs::PointCloud2>("/velodyne_cloud_3", 2);
+  _pubLaserCloudFullRes    = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_odom", 2);
   _pubLaserOdometry        = node.advertise<nav_msgs::Odometry>("/laser_odom_to_init", 5);
 
 
@@ -159,7 +159,7 @@ bool LaserOdometry::setup(ros::NodeHandle &node,
       ("/laser_cloud_less_flat", 2, &LaserOdometry::laserCloudLessFlatHandler, this);
 
   _subLaserCloudFullRes = node.subscribe<sensor_msgs::PointCloud2>
-      ("/velodyne_cloud_2", 2, &LaserOdometry::laserCloudFullResHandler, this);
+      ("/laser_cloud", 2, &LaserOdometry::laserCloudFullResHandler, this);
 
   _subImuTrans = node.subscribe<sensor_msgs::PointCloud2>
       ("/imu_trans", 5, &LaserOdometry::imuTransHandler, this);

@@ -204,7 +204,7 @@ bool ScanRegistration::setup(ros::NodeHandle& node,
 
 
   // advertise scan registration topics
-  _pubLaserCloud = node.advertise<sensor_msgs::PointCloud2>("/velodyne_cloud_2", 2);
+  _pubLaserCloud = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud", 2);
   _pubCornerPointsSharp = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_sharp", 2);
   _pubCornerPointsLessSharp = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_less_sharp", 2);
   _pubSurfPointsFlat = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_flat", 2);
@@ -340,12 +340,6 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
     if (scanEndIdx <= scanStartIdx + 2 * _config.curvatureRegion) {
       continue;
     }
-
-    // Quick&Dirty fix for relative point time calculation without IMU data
-    /*float scanSize = scanEndIdx - scanStartIdx + 1;
-    for (int j = scanStartIdx; j <= scanEndIdx; j++) {
-      _laserCloud[j].intensity = i + _scanPeriod * (j - scanStartIdx) / scanSize;
-    }*/
 
     // reset scan buffers
     setScanBuffersFor(scanStartIdx, scanEndIdx);
