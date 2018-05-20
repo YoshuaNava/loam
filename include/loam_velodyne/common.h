@@ -37,6 +37,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>
+#include <ecl/time/stopwatch.hpp>
+#include <pcl/common/eigen.h>
+#include <pcl/common/transforms.h>
 
 
 namespace loam {
