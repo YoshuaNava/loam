@@ -54,8 +54,8 @@ namespace loam {
 class LaserOdometry {
 public:
   explicit LaserOdometry(const float& scanPeriod = 0.1,
-                         const uint16_t& ioRatio = 2,
-                         const size_t& maxIterations = 25);
+                         const uint16_t& ioRatio = 1,
+                         const size_t& maxIterations = 15);
 
   /** \brief Setup component.
    *

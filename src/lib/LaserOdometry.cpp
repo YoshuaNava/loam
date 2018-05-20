@@ -58,8 +58,8 @@ LaserOdometry::LaserOdometry(const float& scanPeriod,
         _systemInited(false),
         _frameCount(0),
         _maxIterations(maxIterations),
-        _deltaTAbort(0.1),
-        _deltaRAbort(0.1),
+        _deltaTAbort(0.05),
+        _deltaRAbort(0.03),
         _cornerPointsSharp(new pcl::PointCloud<pcl::PointXYZI>()),
         _cornerPointsLessSharp(new pcl::PointCloud<pcl::PointXYZI>()),
         _surfPointsFlat(new pcl::PointCloud<pcl::PointXYZI>()),
@@ -171,6 +171,7 @@ bool LaserOdometry::setup(ros::NodeHandle &node,
 
 void LaserOdometry::transformToStart(const pcl::PointXYZI& pi, pcl::PointXYZI& po)
 {
+  // first translate, then rotate based on registered scan time
   float s = 10 * (pi.intensity - int(pi.intensity));
 
   po.x = pi.x - s * _transform.pos.x();
@@ -195,6 +196,7 @@ size_t LaserOdometry::transformToEnd(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud
 
     float s = 10 * (point.intensity - int(point.intensity));
 
+    // rotate to start
     point.x -= s * _transform.pos.x();
     point.y -= s * _transform.pos.y();
     point.z -= s * _transform.pos.z();
@@ -204,8 +206,15 @@ size_t LaserOdometry::transformToEnd(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud
     Angle ry = -s * _transform.rot_y.rad();
     Angle rz = -s * _transform.rot_z.rad();
     rotateZXY(point, rz, rx, ry);
+
+    // rotate to end
     rotateYXZ(point, _transform.rot_y, _transform.rot_x, _transform.rot_z);
 
+    if (fabs(rx.deg()) > 5.0 || fabs(ry.deg()) > 5.0 || fabs(rz.deg()) > 5.0) {
+      ROS_INFO("[laserOdometry] LARGE transformToEnd: %f, %f, %f || s: %f", rz.deg(), rx.deg(), ry.deg(), s);
+    }
+
+    // incorporating IMU
     point.x += _transform.pos.x() - _imuShiftFromStart.x();
     point.y += _transform.pos.y() - _imuShiftFromStart.y();
     point.z += _transform.pos.z() - _imuShiftFromStart.z();
@@ -278,7 +287,7 @@ void LaserOdometry::pluginIMURotation(const Angle& bcx, const Angle& bcy, const 
                  - cbcx*sbcz*((saly*salz + caly*calz*salx)*(cblz*sbly - cbly*sblx*sblz)
                               + (caly*salz - calz*salx*saly)*(cbly*cblz + sblx*sbly*sblz)
                               - calx*calz*cblx*sblz);
-  acz = atan2(srzcrx / acx.cos(), crzcrx / acx.cos());
+  acz = atan2(srzcrx / acx.cos(), crzcrx / acx.cos()); 
 }
 
 
@@ -287,6 +296,7 @@ void LaserOdometry::accumulateRotation(Angle cx, Angle cy, Angle cz,
                                        Angle lx, Angle ly, Angle lz,
                                        Angle &ox, Angle &oy, Angle &oz)
 {
+  /*
   float srx = lx.cos()*cx.cos()*ly.sin()*cz.sin()
             - cx.cos()*cz.cos()*lx.sin()
             - lx.cos()*ly.cos()*cx.sin();
@@ -306,7 +316,16 @@ void LaserOdometry::accumulateRotation(Angle cx, Angle cy, Angle cz,
   float crzcrx = lx.cos()*lz.cos()*cx.cos()*cz.cos()
                - cx.cos()*cz.sin()*(ly.cos()*lz.sin() - lz.cos()*lx.sin()*ly.sin())
                - cx.sin()*(ly.sin()*lz.sin() + ly.cos()*lz.cos()*lx.sin());
-  oz = atan2(srzcrx / ox.cos(), crzcrx / ox.cos());
+  oz = atan2(srzcrx / ox.cos(), crzcrx / ox.cos()); */
+
+  Eigen::Affine3f current = pcl::getTransformation(0, 0, 0, cy.rad(), cx.rad(), cz.rad());
+  Eigen::Affine3f last = pcl::getTransformation(0, 0, 0, ly.rad(), lx.rad(), lz.rad());
+
+  float oy_f, ox_f, oz_f;
+  pcl::getEulerAngles(last*current, oy_f, ox_f, oz_f);
+  ox = ox_f;
+  oy = oy_f;
+  oz = oz_f;
 }
 
 
@@ -450,6 +469,8 @@ void LaserOdometry::process()
     return;
   }
 
+  ecl::StopWatch stopWatch;
+
   // reset flags, etc.
   reset();
 
@@ -474,6 +495,7 @@ void LaserOdometry::process()
   _frameCount++;
   _transform.pos -= _imuVeloFromStart * _scanPeriod;
 
+  bool isConverged = false;
 
   size_t lastCornerCloudSize = _lastCornerCloud->points.size();
   size_t lastSurfaceCloudSize = _lastSurfaceCloud->points.size();
@@ -730,36 +752,94 @@ void LaserOdometry::process()
         float ty = s * _transform.pos.y();
         float tz = s * _transform.pos.z();
 
-        float arx = (-s*crx*sry*srz*pointOri.x + s*crx*crz*sry*pointOri.y + s*srx*sry*pointOri.z
-                     + s*tx*crx*sry*srz - s*ty*crx*crz*sry - s*tz*srx*sry) * coeff.x
-                    + (s*srx*srz*pointOri.x - s*crz*srx*pointOri.y + s*crx*pointOri.z
-                       + s*ty*crz*srx - s*tz*crx - s*tx*srx*srz) * coeff.y
-                    + (s*crx*cry*srz*pointOri.x - s*crx*cry*crz*pointOri.y - s*cry*srx*pointOri.z
-                       + s*tz*cry*srx + s*ty*crx*cry*crz - s*tx*crx*cry*srz) * coeff.z;
+      	// updated derivatives with respect to rotation and translation
+      	float arx, ary, arz, atx, aty, atz;
+      	int selectMethodType = 1; // 1: original; else: disturbance model
 
-        float ary = ((-s*crz*sry - s*cry*srx*srz)*pointOri.x
-                     + (s*cry*crz*srx - s*sry*srz)*pointOri.y - s*crx*cry*pointOri.z
-                     + tx*(s*crz*sry + s*cry*srx*srz) + ty*(s*sry*srz - s*cry*crz*srx)
-                     + s*tz*crx*cry) * coeff.x
-                    + ((s*cry*crz - s*srx*sry*srz)*pointOri.x
-                       + (s*cry*srz + s*crz*srx*sry)*pointOri.y - s*crx*sry*pointOri.z
-                       + s*tz*crx*sry - ty*(s*cry*srz + s*crz*srx*sry)
-                       - tx*(s*cry*crz - s*srx*sry*srz)) * coeff.z;
+      	if (selectMethodType == 1) {
+           arx = s * (- pointOri.x * (crx * sry * srz)
+                      + pointOri.y * (crx * crz * sry)
+                      + pointOri.z * (srx * sry)
+                      + tx * (crx * sry * srz)
+                      - ty * (crx * crz * sry)
+                      - tz * (srx * sry)) * coeff.x
+               + s * (+ pointOri.x * (srx * srz)
+                      - pointOri.y * (crz * srx)
+                      + pointOri.z * crx
+                      - tx * (srx * srz)
+                      + ty * (crz * srx)
+                      - tz * (crx)) * coeff.y
+               + s * (+ pointOri.x * (crx * cry * srz)
+                      - pointOri.y * (crx * cry * crz)
+                      - pointOri.z * (cry * srx)
+                      - tx * (crx * cry * srz)
+                      + ty * (crx * cry * crz)
+                      + tz * (cry * srx)) * coeff.z;
 
-        float arz = ((-s*cry*srz - s*crz*srx*sry)*pointOri.x + (s*cry*crz - s*srx*sry*srz)*pointOri.y
-                     + tx*(s*cry*srz + s*crz*srx*sry) - ty*(s*cry*crz - s*srx*sry*srz)) * coeff.x
-                    + (-s*crx*crz*pointOri.x - s*crx*srz*pointOri.y
-                       + s*ty*crx*srz + s*tx*crx*crz) * coeff.y
-                    + ((s*cry*crz*srx - s*sry*srz)*pointOri.x + (s*crz*sry + s*cry*srx*srz)*pointOri.y
-                       + tx*(s*sry*srz - s*cry*crz*srx) - ty*(s*crz*sry + s*cry*srx*srz)) * coeff.z;
+           ary = s * (- pointOri.x * (crz * sry + cry * srx * srz)
+                      - pointOri.y * (sry * srz - cry * crz * srx)
+                      - pointOri.z * (crx * cry)
+                      + tx * (crz * sry + cry * srx * srz)
+                      + ty * (sry * srz - cry * crz * srx)
+                      + tz * (crx * cry)) * coeff.x
+               + s * (+ pointOri.x * (cry * crz - srx * sry * srz)
+                      + pointOri.y * (cry * srz + crz * srx * sry)
+                      - pointOri.z * (crx * sry)
+                      - tx * (cry * crz - srx * sry * srz)
+                      - ty * (cry * srz + crz * srx * sry)
+                      + tz * (crx * sry)) * coeff.z;
 
-        float atx = -s*(cry*crz - srx*sry*srz) * coeff.x + s*crx*srz * coeff.y
-                    - s*(crz*sry + cry*srx*srz) * coeff.z;
+           arz = s * (- pointOri.x * (cry * srz + crz * srx * sry)
+                      + pointOri.y * (cry * crz - srx * sry * srz)
+                      + tx * (cry * srz + crz * srx * sry)
+                      - ty * (cry * crz - srx * sry * srz)) * coeff.x
+               + s * (- pointOri.x * (crx * crz)
+                      - pointOri.y * (crx * srz)
+                      + tx * crx * crz
+                      + ty * crx * srz) * coeff.y
+               + s * (+ pointOri.x * (cry * crz * srx - sry * srz)
+                      + pointOri.y * (crz * sry + cry * srx * srz)
+                      + tx * (sry * srz - cry * crz * srx)
+                      - ty * (crz * sry + cry * srx * srz)) * coeff.z;
 
-        float aty = -s*(cry*srz + crz*srx*sry) * coeff.x - s*crx*crz * coeff.y
-                    - s*(sry*srz - cry*crz*srx) * coeff.z;
+           atx = - s * (cry * crz - srx * sry * srz) * coeff.x
+                 + s * (crx * srz) * coeff.y
+                 - s * (crz * sry + cry * srx * srz) * coeff.z;
+           aty = - s * (cry * srz + crz * srx * sry) * coeff.x
+                 - s * (crx * crz) * coeff.y
+                 - s * (sry * srz - cry * crz * srx) * coeff.z;
+           atz = + s * (crx * sry) * coeff.x
+                 - s * (srx) * coeff.y
+                 - s * (crx * cry) * coeff.z;
+      	} else {
+           s = 1.0;
+           float x_trf_bck = + pointOri.x * (crz * cry + srx * sry * srz)
+                             + pointOri.y * (cry * srz - crz * sry * srx)
+                             + pointOri.z * (crx * sry)
+                             + tx * (-crz * cry - srz * sry * srz)
+                             + ty * (-cry * srz + crz * sry * srx)
+                             + tz * (-crx * sry);
+           float y_trf_bck = + pointOri.x * (-crx * srz)
+                             + pointOri.y * (crz * crx)
+                             + pointOri.z * (srx)
+                             + tx * (crx * srz)
+                             + ty * (-crz * crx)
+                             + tz * (-srx);
+           float z_trf_bck = + pointOri.x * (-crz * sry + cry * srz * srx)
+                             + pointOri.y * (-srz * sry - crz * cry * srx)
+                             + pointOri.z * (cry * crx)
+                             + tx * (crz * sry - cry * srz * srx)
+                             + ty * (srz * sry + crz * cry * srx)
+                             + tz * (-cry * crx);
 
-        float atz = s*crx*sry * coeff.x - s*srx * coeff.y - s*crx*cry * coeff.z;
+           arx = -s * (0.0 *        coeff.x - z_trf_bck * coeff.y + y_trf_bck * coeff.z);
+           ary = -s * (z_trf_bck *  coeff.x + 0.0 *       coeff.y - x_trf_bck * coeff.z);
+           arz = -s * (-y_trf_bck * coeff.x + x_trf_bck * coeff.y + 0.0       * coeff.z);
+
+           atx = -s * coeff.x;
+           aty = -s * coeff.y;
+           atz = -s * coeff.z;
+      	}
 
         float d2 = coeff.intensity;
 
@@ -832,23 +912,33 @@ void LaserOdometry::process()
                           pow(matX(5, 0) * 100, 2));
 
       if (deltaR < _deltaRAbort && deltaT < _deltaTAbort) {
+        ROS_DEBUG("[laserOdometry] Optimization Done: %i, %i, %f, %f", pointSelNum, int(iterCount), deltaR, deltaT);
+        isConverged = true;
         break;
       }
     }
+    if (!isConverged) {
+      ROS_DEBUG("[laserOdometry] Optimization Incomplete");
+    }
+  }
+
+  if (_transform.rot_x.deg() > 1.0 || _transform.rot_y.deg() > 1.0 || _transform.rot_z.deg() > 1.0 ) {
+    ROS_INFO("[laserOdometry] LARGE _transform.rot %f, %f, %f", _transform.rot_x.deg(), _transform.rot_y.deg(), _transform.rot_z.deg());
   }
 
   Angle rx, ry, rz;
+  float corr = 1.0;
   accumulateRotation(_transformSum.rot_x,
                      _transformSum.rot_y,
                      _transformSum.rot_z,
                      -_transform.rot_x,
-                     -_transform.rot_y.rad() * 1.05,
+                     -_transform.rot_y.rad() * corr,
                      -_transform.rot_z,
                      rx, ry, rz);
 
   Vector3 v( _transform.pos.x()        - _imuShiftFromStart.x(),
              _transform.pos.y()        - _imuShiftFromStart.y(),
-             _transform.pos.z() * 1.05 - _imuShiftFromStart.z() );
+             _transform.pos.z() * corr - _imuShiftFromStart.z() );
   rotateZXY(v, rz, rx, ry);
   Vector3 trans = _transformSum.pos - v;
 
@@ -877,6 +967,8 @@ void LaserOdometry::process()
   }
 
   publishResult();
+
+  ROS_DEBUG_STREAM("[laserOdometry] took " << stopWatch.elapsed());
 }
 
 
