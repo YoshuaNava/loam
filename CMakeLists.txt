@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf
+  ecl_time
   
   QUIET
 )
@@ -30,7 +31,7 @@ include_directories(
 )
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs pcl_catkin
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs pcl_catkin ecl_time
   DEPENDS EIGEN3 #PCL
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
