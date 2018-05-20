@@ -31,6 +31,7 @@
 //     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
 #include "loam_velodyne/TransformMaintenance.h"
+#include <fstream>
 
 
 namespace loam {
@@ -213,12 +214,25 @@ void TransformMaintenance::laserOdometryHandler(const nav_msgs::Odometry::ConstP
   _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
   _laserOdometryTrans2.setOrigin(tf::Vector3(_transformMapped[3], _transformMapped[4], _transformMapped[5]));
   _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
+
+  // write odom to file
+  tf::Matrix3x3 result = tf::Matrix3x3(tf::Quaternion(geoQuat.z, -geoQuat.x, -geoQuat.y, geoQuat.w));
+
+  std::ofstream myfile;
+  myfile.open ("/home/cedricxie/Documents/LOAM/kitti_odometry/result.txt", std::ios_base::app);
+  myfile << result[0][0] << " " << result[0][1] << " " << result[0][2] << " " << _transformMapped[3] << " "
+         << result[1][0] << " " << result[1][1] << " " << result[1][2] << " " << _transformMapped[4] << " "
+         << result[2][0] << " " << result[2][1] << " " << result[2][2] << " " << _transformMapped[5] << " " << " \n";
+  myfile.close();
+
   // publish path from odom
+
   geometry_msgs::PoseStamped _poseInPathMsg;
 
   // set atributes of the msg
   _pathMsg.header.stamp = ros::Time::now();
   _poseInPathMsg.header.stamp = laserOdometry->header.stamp;
+  //_poseInPathMsg.header.frame_id = "pose_in_path";
   _poseInPathMsg.pose.position.x = _transformMapped[3];
   _poseInPathMsg.pose.position.y = _transformMapped[4];
   _poseInPathMsg.pose.position.z = _transformMapped[5];
