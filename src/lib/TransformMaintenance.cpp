@@ -47,6 +47,7 @@ TransformMaintenance::TransformMaintenance()
   _laserOdometry2.header.frame_id = "/camera_init";
   _laserOdometry2.child_frame_id = "/camera";
 
+  _pathMsg.header.frame_id = "/camera_init";
   _laserOdometryTrans2.frame_id_ = "/camera_init";
   _laserOdometryTrans2.child_frame_id_ = "/camera";
 
@@ -65,6 +66,8 @@ bool TransformMaintenance::setup(ros::NodeHandle &node, ros::NodeHandle &private
 {
   // advertise integrated laser odometry topic
   _pubLaserOdometry2 = node.advertise<nav_msgs::Odometry> ("/integrated_to_init", 5);
+
+  _pubOdomToPath = node.advertise<nav_msgs::Path> ("/odom_to_path", 2);
 
   // subscribe to laser odometry and mapping odometry topics
   _subLaserOdometry = node.subscribe<nav_msgs::Odometry>
@@ -210,6 +213,22 @@ void TransformMaintenance::laserOdometryHandler(const nav_msgs::Odometry::ConstP
   _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
   _laserOdometryTrans2.setOrigin(tf::Vector3(_transformMapped[3], _transformMapped[4], _transformMapped[5]));
   _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
+  // publish path from odom
+  geometry_msgs::PoseStamped _poseInPathMsg;
+
+  // set atributes of the msg
+  _pathMsg.header.stamp = ros::Time::now();
+  _poseInPathMsg.header.stamp = laserOdometry->header.stamp;
+  _poseInPathMsg.pose.position.x = _transformMapped[3];
+  _poseInPathMsg.pose.position.y = _transformMapped[4];
+  _poseInPathMsg.pose.position.z = _transformMapped[5];
+  _poseInPathMsg.pose.orientation.x = -geoQuat.y;
+  _poseInPathMsg.pose.orientation.y = -geoQuat.z;
+  _poseInPathMsg.pose.orientation.z = geoQuat.x;
+  _poseInPathMsg.pose.orientation.w = geoQuat.w;
+  _pathMsg.poses.push_back(_poseInPathMsg);
+
+  _pubOdomToPath.publish(_pathMsg);
 }
 
 
