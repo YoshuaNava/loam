@@ -36,6 +36,7 @@
 
 #include <ros/node_handle.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 #include <tf/transform_broadcaster.h>
 
 namespace loam {
@@ -80,9 +81,11 @@ private:
   float _transformAftMapped[6];
 
   nav_msgs::Odometry _laserOdometry2;         ///< latest integrated laser odometry message
+  nav_msgs::Path _pathMsg;
   tf::StampedTransform _laserOdometryTrans2;  ///< latest integrated laser odometry transformation
 
   ros::Publisher _pubLaserOdometry2;          ///< integrated laser odometry publisher
+  ros::Publisher _pubOdomToPath;
   tf::TransformBroadcaster _tfBroadcaster2;   ///< integrated laser odometry transformation broadcaster
 
   ros::Subscriber _subLaserOdometry;    ///< (high frequency) laser odometry subscriber
