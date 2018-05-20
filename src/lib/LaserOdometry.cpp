@@ -498,7 +498,7 @@ void LaserOdometry::process()
       _laserCloudOri->clear();
       _coeffSel->clear();
 
-      for (int i = 0; i < cornerPointsSharpNum; i++) {
+      for (size_t i = 0; i < cornerPointsSharpNum; i++) {
         transformToStart(_cornerPointsSharp->points[i], pointSel);
 
         if (iterCount % 5 == 0) {
@@ -511,8 +511,8 @@ void LaserOdometry::process()
             int closestPointScan = int(_lastCornerCloud->points[closestPointInd].intensity);
 
             float pointSqDis, minPointSqDis2 = 25;
-            for (int j = closestPointInd + 1; j < cornerPointsSharpNum; j++) {
-              if (int(_lastCornerCloud->points[j].intensity) > closestPointScan + 2.5) {
+            for (size_t j = closestPointInd + 1; j < cornerPointsSharpNum; j++) {
+              if (size_t(_lastCornerCloud->points[j].intensity) > closestPointScan + 2.5) {
                 break;
               }
 
@@ -602,7 +602,7 @@ void LaserOdometry::process()
         }
       }
 
-      for (int i = 0; i < surfPointsFlatNum; i++) {
+      for (size_t i = 0; i < surfPointsFlatNum; i++) {
         transformToStart(_surfPointsFlat->points[i], pointSel);
 
         if (iterCount % 5 == 0) {
@@ -613,7 +613,7 @@ void LaserOdometry::process()
             int closestPointScan = int(_lastSurfaceCloud->points[closestPointInd].intensity);
 
             float pointSqDis, minPointSqDis2 = 25, minPointSqDis3 = 25;
-            for (int j = closestPointInd + 1; j < surfPointsFlatNum; j++) {
+            for (size_t j = closestPointInd + 1; j < surfPointsFlatNum; j++) {
               if (int(_lastSurfaceCloud->points[j].intensity) > closestPointScan + 2.5) {
                 break;
               }
@@ -702,7 +702,7 @@ void LaserOdometry::process()
         }
       }
 
-      int pointSelNum = _laserCloudOri->points.size();
+      size_t pointSelNum = _laserCloudOri->points.size();
       if (pointSelNum < 10) {
         continue;
       }
@@ -714,7 +714,7 @@ void LaserOdometry::process()
       Eigen::Matrix<float,6,1> matAtB;
       Eigen::Matrix<float,6,1> matX;
 
-      for (int i = 0; i < pointSelNum; i++) {
+      for (size_t i = 0; i < pointSelNum; i++) {
         const pcl::PointXYZI& pointOri = _laserCloudOri->points[i];
         coeff = _coeffSel->points[i];
 

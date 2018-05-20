@@ -177,7 +177,7 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
   std::vector<pcl::PointCloud<pcl::PointXYZI> > laserCloudScans(_scanMapper.getNumberOfScanRings());
 
   // extract valid points from input cloud
-  for (int i = 0; i < cloudSize; i++) {
+  for (size_t i = 0; i < cloudSize; i++) {
     point.x = laserCloudIn[i].y;
     point.y = laserCloudIn[i].z;
     point.z = laserCloudIn[i].x;
@@ -238,7 +238,7 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
 
   // construct sorted full resolution cloud
   cloudSize = 0;
-  for (int i = 0; i < _scanMapper.getNumberOfScanRings(); i++) {
+  for (size_t i = 0; i < _scanMapper.getNumberOfScanRings(); i++) {
     _laserCloud += laserCloudScans[i];
 
     IndexRange range(cloudSize, 0);

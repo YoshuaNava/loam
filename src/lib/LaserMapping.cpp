@@ -477,13 +477,13 @@ void LaserMapping::process()
   transformAssociateToMap();
 
   size_t laserCloudCornerLastNum = _laserCloudCornerLast->points.size();
-  for (int i = 0; i < laserCloudCornerLastNum; i++) {
+  for (size_t i = 0; i < laserCloudCornerLastNum; i++) {
     pointAssociateToMap(_laserCloudCornerLast->points[i], pointSel);
     _laserCloudCornerStack->push_back(pointSel);
   }
 
   size_t laserCloudSurfLastNum = _laserCloudSurfLast->points.size();
-  for (int i = 0; i < laserCloudSurfLastNum; i++) {
+  for (size_t i = 0; i < laserCloudSurfLastNum; i++) {
     pointAssociateToMap(_laserCloudSurfLast->points[i], pointSel);
     _laserCloudSurfStack->push_back(pointSel);
   }
@@ -504,13 +504,13 @@ void LaserMapping::process()
   if (_transformTobeMapped.pos.z() + 25.0 < 0) centerCubeK--;
 
   while (centerCubeI < 3) {
-    for (int j = 0; j < _laserCloudHeight; j++) {
-      for (int k = 0; k < _laserCloudDepth; k++) {
-      for (int i = _laserCloudWidth - 1; i >= 1; i--) {
-        const size_t indexA = toIndex(i, j, k);
-        const size_t indexB = toIndex(i-1, j, k);
-        std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
-        std::swap( _laserCloudSurfArray[indexA],   _laserCloudSurfArray[indexB]);
+    for (size_t j = 0; j < _laserCloudHeight; j++) {
+      for (size_t k = 0; k < _laserCloudDepth; k++) {
+        for (int i = _laserCloudWidth - 1; i >= 1; i--) {
+          const size_t indexA = toIndex(i, j, k);
+          const size_t indexB = toIndex(i-1, j, k);
+          std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
+          std::swap( _laserCloudSurfArray[indexA],   _laserCloudSurfArray[indexB]);
         }
       }
     }
@@ -518,14 +518,14 @@ void LaserMapping::process()
     _laserCloudCenWidth++;
   }
 
-  while (centerCubeI >= _laserCloudWidth - 3) {
-    for (int j = 0; j < _laserCloudHeight; j++) {
-      for (int k = 0; k < _laserCloudDepth; k++) {
-       for (int i = 0; i < _laserCloudWidth - 1; i++) {
-         const size_t indexA = toIndex(i, j, k);
-         const size_t indexB = toIndex(i+1, j, k);
-         std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
-         std::swap( _laserCloudSurfArray[indexA],   _laserCloudSurfArray[indexB]);
+  while (centerCubeI >= (int)_laserCloudWidth - 3) {
+    for (size_t j = 0; j < _laserCloudHeight; j++) {
+      for (size_t k = 0; k < _laserCloudDepth; k++) {
+       for (size_t i = 0; i < _laserCloudWidth - 1; i++) {
+          const size_t indexA = toIndex(i, j, k);
+          const size_t indexB = toIndex(i+1, j, k);
+          std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
+          std::swap( _laserCloudSurfArray[indexA],   _laserCloudSurfArray[indexB]);
         }
       }
     }
@@ -534,9 +534,9 @@ void LaserMapping::process()
   }
 
   while (centerCubeJ < 3) {
-    for (int i = 0; i < _laserCloudWidth; i++) {
-      for (int k = 0; k < _laserCloudDepth; k++) {
-        for (int j = _laserCloudHeight - 1; j >= 1; j--) {
+    for (size_t i = 0; i < _laserCloudWidth; i++) {
+      for (size_t k = 0; k < _laserCloudDepth; k++) {
+        for (int j = (int)_laserCloudHeight - 1; j >= 1; j--) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j-1, k);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -548,10 +548,10 @@ void LaserMapping::process()
     _laserCloudCenHeight++;
   }
 
-  while (centerCubeJ >= _laserCloudHeight - 3) {
-    for (int i = 0; i < _laserCloudWidth; i++) {
-      for (int k = 0; k < _laserCloudDepth; k++) {
-        for (int j = 0; j < _laserCloudHeight - 1; j++) {
+  while (centerCubeJ >= (int)_laserCloudHeight - 3) {
+    for (size_t i = 0; i < _laserCloudWidth; i++) {
+      for (size_t k = 0; k < _laserCloudDepth; k++) {
+        for (int j = 0; j < (int)_laserCloudHeight - 1; j++) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j+1, k);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -564,8 +564,8 @@ void LaserMapping::process()
   }
 
   while (centerCubeK < 3) {
-    for (int i = 0; i < _laserCloudWidth; i++) {
-      for (int j = 0; j < _laserCloudHeight; j++) {
+    for (size_t i = 0; i < _laserCloudWidth; i++) {
+      for (size_t j = 0; j < _laserCloudHeight; j++) {
         for (int k = _laserCloudDepth - 1; k >= 1; k--) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j, k-1);
@@ -578,10 +578,10 @@ void LaserMapping::process()
     _laserCloudCenDepth++;
   }
 
-  while (centerCubeK >= _laserCloudDepth - 3) {
-    for (int i = 0; i < _laserCloudWidth; i++) {
-      for (int j = 0; j < _laserCloudHeight; j++) {
-        for (int k = 0; k < _laserCloudDepth - 1; k++) {
+  while (centerCubeK >= (int)_laserCloudDepth - 3) {
+    for (size_t i = 0; i < _laserCloudWidth; i++) {
+      for (size_t j = 0; j < _laserCloudHeight; j++) {
+        for (size_t k = 0; k < _laserCloudDepth - 1; k++) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j, k+1);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -598,9 +598,9 @@ void LaserMapping::process()
   for (int i = centerCubeI - 2; i <= centerCubeI + 2; i++) {
     for (int j = centerCubeJ - 2; j <= centerCubeJ + 2; j++) {
       for (int k = centerCubeK - 2; k <= centerCubeK + 2; k++) {
-        if (i >= 0 && i < _laserCloudWidth &&
-            j >= 0 && j < _laserCloudHeight &&
-            k >= 0 && k < _laserCloudDepth) {
+        if (i >= 0 && i < (int)_laserCloudWidth &&
+            j >= 0 && j < (int)_laserCloudHeight &&
+            k >= 0 && k < (int)_laserCloudDepth) {
 
           float centerX = 50.0f * (i - _laserCloudCenWidth);
           float centerY = 50.0f * (j - _laserCloudCenHeight);
@@ -647,19 +647,19 @@ void LaserMapping::process()
   _laserCloudCornerFromMap->clear();
   _laserCloudSurfFromMap->clear();
   size_t laserCloudValidNum = _laserCloudValidInd.size();
-  for (int i = 0; i < laserCloudValidNum; i++) {
+  for (size_t i = 0; i < laserCloudValidNum; i++) {
     *_laserCloudCornerFromMap += *_laserCloudCornerArray[_laserCloudValidInd[i]];
     *_laserCloudSurfFromMap += *_laserCloudSurfArray[_laserCloudValidInd[i]];
   }
 
   // prepare feature stack clouds for pose optimization
   size_t laserCloudCornerStackNum2 = _laserCloudCornerStack->points.size();
-  for (int i = 0; i < laserCloudCornerStackNum2; i++) {
+  for (size_t i = 0; i < laserCloudCornerStackNum2; i++) {
     pointAssociateTobeMapped(_laserCloudCornerStack->points[i], _laserCloudCornerStack->points[i]);
   }
 
   size_t laserCloudSurfStackNum2 = _laserCloudSurfStack->points.size();
-  for (int i = 0; i < laserCloudSurfStackNum2; i++) {
+  for (size_t i = 0; i < laserCloudSurfStackNum2; i++) {
     pointAssociateTobeMapped(_laserCloudSurfStack->points[i], _laserCloudSurfStack->points[i]);
   }
 
@@ -683,7 +683,7 @@ void LaserMapping::process()
 
 
   // store down sized corner stack points in corresponding cube clouds
-  for (int i = 0; i < laserCloudCornerStackNum; i++) {
+  for (size_t i = 0; i < laserCloudCornerStackNum; i++) {
     pointAssociateToMap(_laserCloudCornerStackDS->points[i], pointSel);
 
     int cubeI = int((pointSel.x + 25.0) / 50.0) + _laserCloudCenWidth;
@@ -694,16 +694,16 @@ void LaserMapping::process()
     if (pointSel.y + 25.0 < 0) cubeJ--;
     if (pointSel.z + 25.0 < 0) cubeK--;
 
-    if (cubeI >= 0 && cubeI < _laserCloudWidth &&
-        cubeJ >= 0 && cubeJ < _laserCloudHeight &&
-        cubeK >= 0 && cubeK < _laserCloudDepth) {
+    if (cubeI >= 0 && cubeI < (int)_laserCloudWidth &&
+        cubeJ >= 0 && cubeJ < (int)_laserCloudHeight &&
+        cubeK >= 0 && cubeK < (int)_laserCloudDepth) {
       size_t cubeInd = cubeI + _laserCloudWidth * cubeJ + _laserCloudWidth * _laserCloudHeight * cubeK;
       _laserCloudCornerArray[cubeInd]->push_back(pointSel);
     }
   }
 
   // store down sized surface stack points in corresponding cube clouds
-  for (int i = 0; i < laserCloudSurfStackNum; i++) {
+  for (size_t i = 0; i < laserCloudSurfStackNum; i++) {
     pointAssociateToMap(_laserCloudSurfStackDS->points[i], pointSel);
 
     int cubeI = int((pointSel.x + 25.0) / 50.0) + _laserCloudCenWidth;
@@ -714,16 +714,16 @@ void LaserMapping::process()
     if (pointSel.y + 25.0 < 0) cubeJ--;
     if (pointSel.z + 25.0 < 0) cubeK--;
 
-    if (cubeI >= 0 && cubeI < _laserCloudWidth &&
-        cubeJ >= 0 && cubeJ < _laserCloudHeight &&
-        cubeK >= 0 && cubeK < _laserCloudDepth) {
+    if (cubeI >= 0 && cubeI < (int)_laserCloudWidth &&
+        cubeJ >= 0 && cubeJ < (int)_laserCloudHeight &&
+        cubeK >= 0 && cubeK < (int)_laserCloudDepth) {
       size_t cubeInd = cubeI + _laserCloudWidth * cubeJ + _laserCloudWidth * _laserCloudHeight * cubeK;
       _laserCloudSurfArray[cubeInd]->push_back(pointSel);
     }
   }
 
   // down size all valid (within field of view) feature cube clouds
-  for (int i = 0; i < laserCloudValidNum; i++) {
+  for (size_t i = 0; i < laserCloudValidNum; i++) {
     size_t ind = _laserCloudValidInd[i];
 
     _laserCloudCornerDSArray[ind]->clear();
@@ -791,7 +791,7 @@ void LaserMapping::optimizeTransformTobeMapped()
     laserCloudOri.clear();
     coeffSel.clear();
 
-    for (int i = 0; i < laserCloudCornerStackNum; i++) {
+    for (size_t i = 0; i < laserCloudCornerStackNum; i++) {
       pointOri = _laserCloudCornerStackDS->points[i];
       pointAssociateToMap(pointOri, pointSel);
       kdtreeCornerFromMap.nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis );
@@ -807,7 +807,7 @@ void LaserMapping::optimizeTransformTobeMapped()
         Eigen::Matrix3f mat_a;
         mat_a.setZero();
 
-        for (int j = 0; j < 5; j++) {
+        for (size_t j = 0; j < 5; j++) {
           Vector3 a = Vector3(_laserCloudCornerFromMap->points[pointSearchInd[j]]) - vc;
 
           mat_a(0,0) += a.x() * a.x();
@@ -876,13 +876,13 @@ void LaserMapping::optimizeTransformTobeMapped()
       }
     }
 
-    for (int i = 0; i < laserCloudSurfStackNum; i++) {
+    for (size_t i = 0; i < laserCloudSurfStackNum; i++) {
       pointOri = _laserCloudSurfStackDS->points[i];
       pointAssociateToMap(pointOri, pointSel);
       kdtreeSurfFromMap.nearestKSearch(pointSel, 5, pointSearchInd, pointSearchSqDis );
 
       if (pointSearchSqDis[4] < 1.0) {
-        for (int j = 0; j < 5; j++) {
+        for (size_t j = 0; j < 5; j++) {
           matA0(j, 0) = _laserCloudSurfFromMap->points[pointSearchInd[j]].x;
           matA0(j, 1) = _laserCloudSurfFromMap->points[pointSearchInd[j]].y;
           matA0(j, 2) = _laserCloudSurfFromMap->points[pointSearchInd[j]].z;
@@ -901,7 +901,7 @@ void LaserMapping::optimizeTransformTobeMapped()
         pd /= ps;
 
         bool planeValid = true;
-        for (int j = 0; j < 5; j++) {
+        for (size_t j = 0; j < 5; j++) {
           if (fabs(pa * _laserCloudSurfFromMap->points[pointSearchInd[j]].x +
                    pb * _laserCloudSurfFromMap->points[pointSearchInd[j]].y +
                    pc * _laserCloudSurfFromMap->points[pointSearchInd[j]].z + pd) > 0.2) {
@@ -953,7 +953,7 @@ void LaserMapping::optimizeTransformTobeMapped()
     Eigen::VectorXf matAtB;
     Eigen::VectorXf matX;
 
-    for (int i = 0; i < laserCloudSelNum; i++) {
+    for (size_t i = 0; i < laserCloudSelNum; i++) {
       pointOri = laserCloudOri.points[i];
       coeff = coeffSel.points[i];
 
@@ -1051,7 +1051,7 @@ void LaserMapping::publishResult()
 
     if(_pubLaserCloudSurround.getNumSubscribers()) {
       size_t laserCloudSurroundNum = _laserCloudSurroundInd.size();
-      for (int i = 0; i < laserCloudSurroundNum; i++) {
+      for (size_t i = 0; i < laserCloudSurroundNum; i++) {
         size_t ind = _laserCloudSurroundInd[i];
         *_laserCloudSurround += *_laserCloudCornerArray[ind];
         *_laserCloudSurround += *_laserCloudSurfArray[ind];
@@ -1070,7 +1070,7 @@ void LaserMapping::publishResult()
 
   // transform full resolution input cloud to map
   size_t laserCloudFullResNum = _laserCloudFullRes->points.size();
-  for (int i = 0; i < laserCloudFullResNum; i++) {
+  for (size_t i = 0; i < laserCloudFullResNum; i++) {
     pointAssociateToMap(_laserCloudFullRes->points[i], _laserCloudFullRes->points[i]);
   }
 

@@ -386,8 +386,8 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
       }
 
       // extract flat surface features
-      int smallestPickedNum = 0;
-      for (int k = 0; k < regionSize && smallestPickedNum < _config.maxSurfaceFlat; k++) {
+      size_t smallestPickedNum = 0;
+      for (size_t k = 0; k < regionSize && smallestPickedNum < (size_t)_config.maxSurfaceFlat; k++) {
         size_t idx = _regionSortIndices[k];
         size_t scanIdx = idx - scanStartIdx;
         size_t regionIdx = idx - sp;
@@ -404,7 +404,7 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
       }
 
       // extract less flat surface features
-      for (int k = 0; k < regionSize; k++) {
+      for (size_t k = 0; k < regionSize; k++) {
         if (_regionLabel[k] <= SURFACE_LESS_FLAT) {
           surfPointsLessFlatScan->push_back(_laserCloud[sp + k]);
         }

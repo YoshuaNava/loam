@@ -50,7 +50,7 @@ public:
    *
    * @param reqCapacity the minimum required capacity
    */
-  void ensureCapacity(const int& reqCapacity) {
+  void ensureCapacity(const size_t& reqCapacity) {
     if (reqCapacity > 0 && _capacity < reqCapacity) {
       // create new buffer and copy (valid) entries
       T* newBuffer = new T[reqCapacity];
