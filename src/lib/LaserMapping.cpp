@@ -51,13 +51,13 @@ using std::pow;
 LaserMapping::LaserMapping(const float& scanPeriod,
                            const size_t& maxIterations)
       : _scanPeriod(scanPeriod),
-        _stackFrameNum(1),
-        _mapFrameNum(5),
+        _stackFrameNum(5),
+        _mapFrameNum(-1),
         _frameCount(0),
         _mapFrameCount(0),
         _maxIterations(maxIterations),
-        _deltaTAbort(0.05),
-        _deltaRAbort(0.05),
+        _deltaTAbort(0.01),
+        _deltaRAbort(0.005),
         _laserCloudCenWidth(10),
         _laserCloudCenHeight(5),
         _laserCloudCenDepth(10),
@@ -461,12 +461,14 @@ void LaserMapping::process()
     return;
   }
 
+  ecl::StopWatch stopWatch;
+
   // reset flags, etc.
   reset();
 
   // skip some frames?!?
   _frameCount++;
-  if (_frameCount < _stackFrameNum) {
+  if (_frameCount < _stackFrameNum && _stackFrameNum > 0) {
     return;
   }
   _frameCount = 0;
@@ -742,6 +744,8 @@ void LaserMapping::process()
 
   // publish result
   publishResult();
+
+  ROS_DEBUG_STREAM("[laserMapping] took " << stopWatch.elapsed());
 }
 
 
@@ -751,6 +755,8 @@ void LaserMapping::optimizeTransformTobeMapped()
   if (_laserCloudCornerFromMap->points.size() <= 10 || _laserCloudSurfFromMap->points.size() <= 100) {
     return;
   }
+
+  bool isConverged = false;
 
   pcl::PointXYZI pointSel, pointOri, pointProj, coeff;
 
@@ -787,10 +793,12 @@ void LaserMapping::optimizeTransformTobeMapped()
   pcl::PointCloud<pcl::PointXYZI> laserCloudOri;
   pcl::PointCloud<pcl::PointXYZI> coeffSel;
 
+  // start iterating
   for (size_t iterCount = 0; iterCount < _maxIterations; iterCount++) {
     laserCloudOri.clear();
     coeffSel.clear();
 
+    // process edges
     for (size_t i = 0; i < laserCloudCornerStackNum; i++) {
       pointOri = _laserCloudCornerStackDS->points[i];
       pointAssociateToMap(pointOri, pointSel);
@@ -876,6 +884,7 @@ void LaserMapping::optimizeTransformTobeMapped()
       }
     }
 
+    // proces planes
     for (size_t i = 0; i < laserCloudSurfStackNum; i++) {
       pointOri = _laserCloudSurfStackDS->points[i];
       pointAssociateToMap(pointOri, pointSel);
@@ -934,6 +943,8 @@ void LaserMapping::optimizeTransformTobeMapped()
       }
     }
 
+
+    // prepare Jacobian matrix
     float srx = _transformTobeMapped.rot_x.sin();
     float crx = _transformTobeMapped.rot_x.cos();
     float sry = _transformTobeMapped.rot_y.sin();
@@ -1030,8 +1041,14 @@ void LaserMapping::optimizeTransformTobeMapped()
                         pow(matX(5, 0) * 100, 2));
 
     if (deltaR < _deltaRAbort && deltaT < _deltaTAbort) {
+      ROS_DEBUG("[laserMapping] Optimization Done: %i, %f, %f", int(iterCount), deltaR, deltaT);
+      isConverged = true;
       break;
     }
+  }
+
+  if (!isConverged) {
+    ROS_DEBUG("[laserMapping] Optimization Incomplete");
   }
 
   transformUpdate();
@@ -1043,7 +1060,7 @@ void LaserMapping::publishResult()
 {
   // publish new map cloud according to the input output ratio
   _mapFrameCount++;
-  if (_mapFrameCount >= _mapFrameNum) {
+  if (_mapFrameCount >= _mapFrameNum || _mapFrameNum < 0) {
     _mapFrameCount = 0;
 
     // accumulate map cloud
