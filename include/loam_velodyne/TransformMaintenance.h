@@ -33,11 +33,13 @@
 #ifndef LOAM_TRANSFORMMAINTENANCE_H
 #define LOAM_TRANSFORMMAINTENANCE_H
 
-
+#include <Eigen/Dense>
 #include <ros/node_handle.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <tf/transform_broadcaster.h>
+
+#include "loam_velodyne/common.h"
 
 namespace loam {
 
@@ -67,6 +69,12 @@ public:
    * @param odomAftMapped the new mapping odometry
    */
   void odomAftMappedHandler(const nav_msgs::Odometry::ConstPtr& odomAftMapped);
+
+  // TODO doc
+  void savePoseToFile(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans);
+
+  // TODO doc
+  void publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp);
 
 
 protected:

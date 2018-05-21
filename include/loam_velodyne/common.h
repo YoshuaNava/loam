@@ -44,6 +44,8 @@
 
 namespace loam {
 
+const Eigen::Quaterniond rot_kitti(0, 0, 0, 1.0);
+
 /** \brief Construct a new point cloud message from the specified information and publish it via the given publisher.
  *
  * @tparam PointT the point type

@@ -31,6 +31,7 @@
 //     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
 #include "loam_velodyne/TransformMaintenance.h"
+
 #include <fstream>
 
 
@@ -215,36 +216,47 @@ void TransformMaintenance::laserOdometryHandler(const nav_msgs::Odometry::ConstP
   _laserOdometryTrans2.setOrigin(tf::Vector3(_transformMapped[3], _transformMapped[4], _transformMapped[5]));
   _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
 
-  // write odom to file
-  tf::Matrix3x3 result = tf::Matrix3x3(tf::Quaternion(geoQuat.z, -geoQuat.x, -geoQuat.y, geoQuat.w));
 
+  Eigen::Quaterniond quat(geoQuat.w, geoQuat.z, -geoQuat.x, -geoQuat.y);
+  Eigen::Isometry3d T;
+  T.linear() = quat.toRotationMatrix();
+  T.translation() = Eigen::Vector3d(_transformMapped[3], _transformMapped[4], _transformMapped[5]);
+  T = rot_kitti.toRotationMatrix() * T;
+
+  publishPath(T.linear(), T.translation(), laserOdometry->header.stamp);
+  savePoseToFile(T.linear(), T.translation());
+}
+
+
+void TransformMaintenance::savePoseToFile(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans) {
+  const std::string filename = "/home/alfredoso/Datasets/KITTI/benchmark/result_05_loam.txt";
   std::ofstream myfile;
-  myfile.open ("/home/cedricxie/Documents/LOAM/kitti_odometry/result.txt", std::ios_base::app);
-  myfile << result[0][0] << " " << result[0][1] << " " << result[0][2] << " " << _transformMapped[3] << " "
-         << result[1][0] << " " << result[1][1] << " " << result[1][2] << " " << _transformMapped[4] << " "
-         << result[2][0] << " " << result[2][1] << " " << result[2][2] << " " << _transformMapped[5] << " " << " \n";
+  myfile.open (filename, std::ios_base::app);
+  myfile << rot(0,0) << " " << rot(0,1) << " " << rot(0,2) << " " << trans(0) << " "
+         << rot(1,0) << " " << rot(1,1) << " " << rot(1,2) << " " << trans(1) << " "
+         << rot(2,0) << " " << rot(2,1) << " " << rot(2,2) << " " << trans(2) << "\n";
   myfile.close();
+}
 
-  // publish path from odom
 
-  geometry_msgs::PoseStamped _poseInPathMsg;
+void TransformMaintenance::publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp) {
+  Eigen::Quaterniond q(rot);
 
   // set atributes of the msg
-  _pathMsg.header.stamp = ros::Time::now();
-  _poseInPathMsg.header.stamp = laserOdometry->header.stamp;
-  //_poseInPathMsg.header.frame_id = "pose_in_path";
-  _poseInPathMsg.pose.position.x = _transformMapped[3];
-  _poseInPathMsg.pose.position.y = _transformMapped[4];
-  _poseInPathMsg.pose.position.z = _transformMapped[5];
-  _poseInPathMsg.pose.orientation.x = -geoQuat.y;
-  _poseInPathMsg.pose.orientation.y = -geoQuat.z;
-  _poseInPathMsg.pose.orientation.z = geoQuat.x;
-  _poseInPathMsg.pose.orientation.w = geoQuat.w;
+  geometry_msgs::PoseStamped _poseInPathMsg;
+  _poseInPathMsg.header.stamp = stamp;
+  _poseInPathMsg.pose.position.x = trans(0);
+  _poseInPathMsg.pose.position.y = trans(1);
+  _poseInPathMsg.pose.position.z = trans(2);
+  _poseInPathMsg.pose.orientation.x = q.x();
+  _poseInPathMsg.pose.orientation.y = q.y();
+  _poseInPathMsg.pose.orientation.z = q.z();
+  _poseInPathMsg.pose.orientation.w = q.w();
   _pathMsg.poses.push_back(_poseInPathMsg);
+  _pathMsg.header.stamp = ros::Time::now();
 
   _pubOdomToPath.publish(_pathMsg);
 }
-
 
 
 void TransformMaintenance::odomAftMappedHandler(const nav_msgs::Odometry::ConstPtr& odomAftMapped)
