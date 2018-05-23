@@ -6,10 +6,12 @@ loam: {
     n_feature_regions: 6,
     curvature_regions: 5,
     max_corner_sharp: 2,
+    max_corner_less_sharp: 2,
     max_surface_flat: 4,
     less_flat_filter_size: 0.2,
     surface_curvature_threshold: 0.1,
     system_delay: 0,
+    lidar_model: "VLP-16",
   },
 
   odometry: {

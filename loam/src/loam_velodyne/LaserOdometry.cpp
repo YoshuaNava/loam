@@ -50,16 +50,22 @@ using std::fabs;
 using std::pow;
 
 
-LaserOdometry::LaserOdometry(const float& scanPeriod,
-                             const uint16_t& ioRatio,
-                             const size_t& maxIterations)
-      : _scanPeriod(scanPeriod),
-        _ioRatio(ioRatio),
+LaserOdometry::LaserOdometry(const LaserOdometryParams& params)
+      : _params(params),
         _systemInited(false),
         _frameCount(0),
-        _maxIterations(maxIterations),
-        _deltaTAbort(0.05),
-        _deltaRAbort(0.03),
+        _timeCornerPointsSharp(0),
+        _timeCornerPointsLessSharp(0),
+        _timeSurfPointsFlat(0),
+        _timeSurfPointsLessFlat(0),
+        _timeLaserCloudFullRes(0),
+        _timeImuTrans(0),
+        _newCornerPointsSharp(false),
+        _newCornerPointsLessSharp(false),
+        _newSurfPointsFlat(false),
+        _newSurfPointsLessFlat(false),
+        _newLaserCloudFullRes(false),
+        _newImuTrans(false),
         _cornerPointsSharp(new pcl::PointCloud<pcl::PointXYZI>()),
         _cornerPointsLessSharp(new pcl::PointCloud<pcl::PointXYZI>()),
         _surfPointsFlat(new pcl::PointCloud<pcl::PointXYZI>()),
@@ -83,57 +89,58 @@ LaserOdometry::LaserOdometry(const float& scanPeriod,
 bool LaserOdometry::setup(ros::NodeHandle &node,
                           ros::NodeHandle &privateNode)
 {
+  const char* module_name = "LaserOdometry";
   // fetch laser odometry params
   float fParam;
   int iParam;
 
-  if (privateNode.getParam("scanPeriod", fParam)) {
+  if (privateNode.getParam("/loam/scan_period", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("Invalid scanPeriod parameter: %f (expected > 0)", fParam);
+      ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
       return false;
     } else {
-      _scanPeriod = fParam;
-      ROS_INFO("Set scanPeriod: %g", fParam);
+      _params.scanPeriod = fParam;
+      ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("ioRatio", iParam)) {
+  if (privateNode.getParam("/loam/odometry/io_ratio", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("Invalid ioRatio parameter: %d (expected > 0)", iParam);
+      ROS_ERROR("%s: Invalid io_ratio parameter: %d (expected > 0)", module_name, iParam);
       return false;
     } else {
-      _ioRatio = iParam;
-      ROS_INFO("Set ioRatio: %d", iParam);
+      _params.ioRatio = iParam;
+      ROS_INFO("%s: Set io_ratio: %d", module_name, iParam);
     }
   }
 
-  if (privateNode.getParam("maxIterations", iParam)) {
+  if (privateNode.getParam("/loam/odometry/max_iterations", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("Invalid maxIterations parameter: %d (expected > 0)", iParam);
+      ROS_ERROR("%s: Invalid max_iterations parameter: %d (expected > 0)", module_name, iParam);
       return false;
     } else {
-      _maxIterations = iParam;
-      ROS_INFO("Set maxIterations: %d", iParam);
+      _params.maxIterations = iParam;
+      ROS_INFO("%s: Set max_iterations: %d", module_name, iParam);
     }
   }
 
-  if (privateNode.getParam("deltaTAbort", fParam)) {
+  if (privateNode.getParam("/loam/odometry/delta_T_abort", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("Invalid deltaTAbort parameter: %f (expected > 0)", fParam);
+      ROS_ERROR("%s: Invalid delta_T_abort parameter: %f (expected > 0)", module_name, fParam);
       return false;
     } else {
-      _deltaTAbort = fParam;
-      ROS_INFO("Set deltaTAbort: %g", fParam);
+      _params.deltaTAbort = fParam;
+      ROS_INFO("%s: Set delta_T_abort: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("deltaRAbort", fParam)) {
+  if (privateNode.getParam("/loam/odometry/delta_R_abort", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("Invalid deltaRAbort parameter: %f (expected > 0)", fParam);
+      ROS_ERROR("%s: Invalid delta_R_abort parameter: %f (expected > 0)", module_name, fParam);
       return false;
     } else {
-      _deltaRAbort = fParam;
-      ROS_INFO("Set deltaRAbort: %g", fParam);
+      _params.deltaRAbort = fParam;
+      ROS_INFO("%s: Set delta_R_abort: %g", module_name, fParam);
     }
   }
 
@@ -493,7 +500,7 @@ void LaserOdometry::process()
   Eigen::Matrix<float,6,6> matP;
 
   _frameCount++;
-  _transform.pos -= _imuVeloFromStart * _scanPeriod;
+  _transform.pos -= _imuVeloFromStart * _params.scanPeriod;
 
   bool isConverged = false;
 
@@ -515,7 +522,7 @@ void LaserOdometry::process()
     _pointSearchSurfInd2.resize(surfPointsFlatNum);
     _pointSearchSurfInd3.resize(surfPointsFlatNum);
 
-    for (size_t iterCount = 0; iterCount < _maxIterations; iterCount++) {
+    for (size_t iterCount = 0; iterCount < _params.maxIterations; iterCount++) {
       pcl::PointXYZI pointSel, pointProj, tripod1, tripod2, tripod3;
       _laserCloudOri->clear();
       _coeffSel->clear();
@@ -911,14 +918,14 @@ void LaserOdometry::process()
                           pow(matX(4, 0) * 100, 2) +
                           pow(matX(5, 0) * 100, 2));
 
-      if (deltaR < _deltaRAbort && deltaT < _deltaTAbort) {
-        ROS_DEBUG("[laserOdometry] Optimization Done: %i, %i, %f, %f", pointSelNum, int(iterCount), deltaR, deltaT);
+      if (deltaR < _params.deltaRAbort && deltaT < _params.deltaTAbort) {
+        ROS_INFO("[laserOdometry] Optimization Done: %lu, %i, %f, %f", pointSelNum, int(iterCount), deltaR, deltaT);
         isConverged = true;
         break;
       }
     }
     if (!isConverged) {
-      ROS_DEBUG("[laserOdometry] Optimization Incomplete");
+      // ROS_INFO("[laserOdometry] Optimization Incomplete");
     }
   }
 
@@ -997,7 +1004,7 @@ void LaserOdometry::publishResult()
 
 
   // publish cloud results according to the input output ratio
-  if (_ioRatio < 2 || _frameCount % _ioRatio == 1) {
+  if (_params.ioRatio < 2 || _frameCount % _params.ioRatio == 1) {
     ros::Time sweepTime(_timeSurfPointsLessFlat);
     transformToEnd(_laserCloud);  // transform full resolution cloud to sweep end before sending it
 

@@ -48,23 +48,21 @@ using std::atan2;
 using std::pow;
 
 
-LaserMapping::LaserMapping(const float& scanPeriod,
-                           const size_t& maxIterations)
-      : _scanPeriod(scanPeriod),
-        _stackFrameNum(5),
-        _mapFrameNum(-1),
-        _frameCount(0),
+LaserMapping::LaserMapping(const LaserMappingParams params)
+      : _params(params),
+         _frameCount(0),
         _mapFrameCount(0),
-        _maxIterations(maxIterations),
-        _deltaTAbort(0.01),
-        _deltaRAbort(0.005),
         _laserCloudCenWidth(10),
         _laserCloudCenHeight(5),
         _laserCloudCenDepth(10),
-        _laserCloudWidth(21),
-        _laserCloudHeight(11),
-        _laserCloudDepth(21),
-        _laserCloudNum(_laserCloudWidth * _laserCloudHeight * _laserCloudDepth),
+        _timeLaserCloudCornerLast(0),
+        _timeLaserCloudSurfLast(0),
+        _timeLaserCloudFullRes(0),
+        _timeLaserOdometry(0),
+        _newLaserCloudCornerLast(false),
+        _newLaserCloudSurfLast(false),
+        _newLaserCloudFullRes(false),
+        _newLaserOdometry(false),
         _laserCloudCornerLast(new pcl::PointCloud<pcl::PointXYZI>()),
         _laserCloudSurfLast(new pcl::PointCloud<pcl::PointXYZI>()),
         _laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZI>()),
@@ -85,16 +83,16 @@ LaserMapping::LaserMapping(const float& scanPeriod,
   _aftMappedTrans.child_frame_id_ = "/aft_mapped";
 
   // initialize frame counter
-  _frameCount = _stackFrameNum - 1;
-  _mapFrameCount = _mapFrameNum - 1;
+  _frameCount = _params.stackFrameNum - 1;
+  _mapFrameCount = _params.mapFrameNum - 1;
 
   // setup cloud vectors
-  _laserCloudCornerArray.resize(_laserCloudNum);
-  _laserCloudSurfArray.resize(_laserCloudNum);
-  _laserCloudCornerDSArray.resize(_laserCloudNum);
-  _laserCloudSurfDSArray.resize(_laserCloudNum);
+  _laserCloudCornerArray.resize(_params.laserCloudNum);
+  _laserCloudSurfArray.resize(_params.laserCloudNum);
+  _laserCloudCornerDSArray.resize(_params.laserCloudNum);
+  _laserCloudSurfDSArray.resize(_params.laserCloudNum);
 
-  for (size_t i = 0; i < _laserCloudNum; i++) {
+  for (size_t i = 0; i < _params.laserCloudNum; i++) {
     _laserCloudCornerArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
     _laserCloudSurfArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
     _laserCloudCornerDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -102,9 +100,9 @@ LaserMapping::LaserMapping(const float& scanPeriod,
   }
 
   // setup down size filters
-  _downSizeFilterCorner.setLeafSize(0.2, 0.2, 0.2);
-  _downSizeFilterSurf.setLeafSize(0.4, 0.4, 0.4);
-  _downSizeFilterMap.setLeafSize(0.6, 0.6, 0.6);
+  _downSizeFilterCorner.setLeafSize(_params.cornerFilterSize, _params.cornerFilterSize, _params.cornerFilterSize);
+  _downSizeFilterSurf.setLeafSize(_params.surfFilterSize, _params.surfFilterSize, _params.surfFilterSize);
+  _downSizeFilterMap.setLeafSize(_params.mapFilterSize, _params.mapFilterSize, _params.mapFilterSize);
 }
 
 
@@ -112,77 +110,81 @@ LaserMapping::LaserMapping(const float& scanPeriod,
 bool LaserMapping::setup(ros::NodeHandle& node,
                          ros::NodeHandle& privateNode)
 {
+  const char* module_name = "LaserMapping:";
   // fetch laser mapping params
   float fParam;
   int iParam;
 
-  if (privateNode.getParam("scanPeriod", fParam)) {
+  if (privateNode.getParam("/loam/scan_period", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("Invalid scanPeriod parameter: %f (expected > 0)", fParam);
+      ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
       return false;
     } else {
-      _scanPeriod = fParam;
-      ROS_INFO("Set scanPeriod: %g", fParam);
+      _params.scanPeriod = fParam;
+      ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("maxIterations", iParam)) {
+  if (privateNode.getParam("/loam/mapping/max_iterations", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("Invalid maxIterations parameter: %d (expected > 0)", iParam);
+      ROS_ERROR("%s: Invalid max_iterations parameter: %d (expected > 0)", module_name, iParam);
       return false;
     } else {
-      _maxIterations = iParam;
-      ROS_INFO("Set maxIterations: %d", iParam);
+      _params.maxIterations = iParam;
+      ROS_INFO("%s: Set max_iterations: %d", module_name, iParam);
     }
   }
 
-  if (privateNode.getParam("deltaTAbort", fParam)) {
+  if (privateNode.getParam("/loam/mapping/delta_T_abort", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("Invalid deltaTAbort parameter: %f (expected > 0)", fParam);
+      ROS_ERROR("%s: Invalid delta_T_abort parameter: %f (expected > 0)", module_name, fParam);
       return false;
     } else {
-      _deltaTAbort = fParam;
-      ROS_INFO("Set deltaTAbort: %g", fParam);
+      _params.deltaTAbort = fParam;
+      ROS_INFO("%s: Set delta_T_abort: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("deltaRAbort", fParam)) {
+  if (privateNode.getParam("/loam/mapping/delta_R_abort", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("Invalid deltaRAbort parameter: %f (expected > 0)", fParam);
+      ROS_ERROR("%s: Invalid delta_R_abort parameter: %f (expected > 0)", module_name, fParam);
       return false;
     } else {
-      _deltaRAbort = fParam;
-      ROS_INFO("Set deltaRAbort: %g", fParam);
+      _params.deltaRAbort = fParam;
+      ROS_INFO("%s: Set delta_R_abort: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("cornerFilterSize", fParam)) {
+  if (privateNode.getParam("/loam/mapping/corner_filter_size", fParam)) {
     if (fParam < 0.001) {
-      ROS_ERROR("Invalid cornerFilterSize parameter: %f (expected >= 0.001)", fParam);
+      ROS_ERROR("%s: Invalid cornerFilterSize parameter: %f (expected >= 0.001)", module_name, fParam);
       return false;
     } else {
-      _downSizeFilterCorner.setLeafSize(fParam, fParam, fParam);
-      ROS_INFO("Set corner down size filter leaf size: %g", fParam);
+      _params.cornerFilterSize = fParam;
+      _downSizeFilterCorner.setLeafSize(_params.cornerFilterSize, _params.cornerFilterSize, _params.cornerFilterSize);
+      ROS_INFO("%s: Set corner down size filter leaf size: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("surfaceFilterSize", fParam)) {
+  if (privateNode.getParam("/loam/mapping/surface_filter_size", fParam)) {
     if (fParam < 0.001) {
-      ROS_ERROR("Invalid surfaceFilterSize parameter: %f (expected >= 0.001)", fParam);
+      ROS_ERROR("%s: Invalid surface_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
       return false;
     } else {
-      _downSizeFilterSurf.setLeafSize(fParam, fParam, fParam);
-      ROS_INFO("Set surface down size filter leaf size: %g", fParam);
+      _params.surfFilterSize = fParam;
+      _downSizeFilterSurf.setLeafSize(_params.surfFilterSize, _params.surfFilterSize, _params.surfFilterSize);
+      ROS_INFO("%s: Set surface down size filter leaf size: %g", module_name, fParam);
     }
   }
 
-  if (privateNode.getParam("mapFilterSize", fParam)) {
+  if (privateNode.getParam("/loam/mapping/map_filter_size", fParam)) {
     if (fParam < 0.001) {
-      ROS_ERROR("Invalid mapFilterSize parameter: %f (expected >= 0.001)", fParam);
+      ROS_ERROR("%s: Invalid map_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
       return false;
     } else {
-      _downSizeFilterMap.setLeafSize(fParam, fParam, fParam);
-      ROS_INFO("Set map down size filter leaf size: %g", fParam);
+      _params.mapFilterSize = fParam;
+      _downSizeFilterMap.setLeafSize(_params.mapFilterSize, _params.mapFilterSize, _params.mapFilterSize);
+      ROS_INFO("%s: Set map down size filter leaf size: %g", module_name, fParam);
     }
   }
 
@@ -287,17 +289,17 @@ void LaserMapping::transformUpdate()
   if (_imuHistory.size() > 0) {
     size_t imuIdx = 0;
 
-    while (imuIdx < _imuHistory.size() - 1 && (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _scanPeriod > 0) {
+    while (imuIdx < _imuHistory.size() - 1 && (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _params.scanPeriod > 0) {
       imuIdx++;
     }
 
     IMUState2 imuCur;
 
-    if (imuIdx == 0 || (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _scanPeriod > 0) {
+    if (imuIdx == 0 || (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _params.scanPeriod > 0) {
       // scan time newer then newest or older than oldest IMU message
       imuCur = _imuHistory[imuIdx];
     } else {
-      float ratio = ((_imuHistory[imuIdx].stamp - _timeLaserOdometry) - _scanPeriod)
+      float ratio = ((_imuHistory[imuIdx].stamp - _timeLaserOdometry) - _params.scanPeriod)
                         / (_imuHistory[imuIdx].stamp - _imuHistory[imuIdx - 1].stamp);
 
       IMUState2::interpolate(_imuHistory[imuIdx], _imuHistory[imuIdx - 1], ratio, imuCur);
@@ -468,7 +470,7 @@ void LaserMapping::process()
 
   // skip some frames?!?
   _frameCount++;
-  if (_frameCount < _stackFrameNum && _stackFrameNum > 0) {
+  if (_frameCount < _params.stackFrameNum && _params.stackFrameNum > 0) {
     return;
   }
   _frameCount = 0;
@@ -506,9 +508,9 @@ void LaserMapping::process()
   if (_transformTobeMapped.pos.z() + 25.0 < 0) centerCubeK--;
 
   while (centerCubeI < 3) {
-    for (size_t j = 0; j < _laserCloudHeight; j++) {
-      for (size_t k = 0; k < _laserCloudDepth; k++) {
-        for (int i = _laserCloudWidth - 1; i >= 1; i--) {
+    for (size_t j = 0; j < _params.laserCloudHeight; j++) {
+      for (size_t k = 0; k < _params.laserCloudDepth; k++) {
+        for (int i = _params.laserCloudWidth - 1; i >= 1; i--) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i-1, j, k);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -520,10 +522,10 @@ void LaserMapping::process()
     _laserCloudCenWidth++;
   }
 
-  while (centerCubeI >= (int)_laserCloudWidth - 3) {
-    for (size_t j = 0; j < _laserCloudHeight; j++) {
-      for (size_t k = 0; k < _laserCloudDepth; k++) {
-       for (size_t i = 0; i < _laserCloudWidth - 1; i++) {
+  while (centerCubeI >= (int)_params.laserCloudWidth - 3) {
+    for (size_t j = 0; j < _params.laserCloudHeight; j++) {
+      for (size_t k = 0; k < _params.laserCloudDepth; k++) {
+       for (size_t i = 0; i < _params.laserCloudWidth - 1; i++) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i+1, j, k);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -536,9 +538,9 @@ void LaserMapping::process()
   }
 
   while (centerCubeJ < 3) {
-    for (size_t i = 0; i < _laserCloudWidth; i++) {
-      for (size_t k = 0; k < _laserCloudDepth; k++) {
-        for (int j = (int)_laserCloudHeight - 1; j >= 1; j--) {
+    for (size_t i = 0; i < _params.laserCloudWidth; i++) {
+      for (size_t k = 0; k < _params.laserCloudDepth; k++) {
+        for (int j = (int)_params.laserCloudHeight - 1; j >= 1; j--) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j-1, k);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -550,10 +552,10 @@ void LaserMapping::process()
     _laserCloudCenHeight++;
   }
 
-  while (centerCubeJ >= (int)_laserCloudHeight - 3) {
-    for (size_t i = 0; i < _laserCloudWidth; i++) {
-      for (size_t k = 0; k < _laserCloudDepth; k++) {
-        for (int j = 0; j < (int)_laserCloudHeight - 1; j++) {
+  while (centerCubeJ >= (int)_params.laserCloudHeight - 3) {
+    for (size_t i = 0; i < _params.laserCloudWidth; i++) {
+      for (size_t k = 0; k < _params.laserCloudDepth; k++) {
+        for (int j = 0; j < (int)_params.laserCloudHeight - 1; j++) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j+1, k);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -566,9 +568,9 @@ void LaserMapping::process()
   }
 
   while (centerCubeK < 3) {
-    for (size_t i = 0; i < _laserCloudWidth; i++) {
-      for (size_t j = 0; j < _laserCloudHeight; j++) {
-        for (int k = _laserCloudDepth - 1; k >= 1; k--) {
+    for (size_t i = 0; i < _params.laserCloudWidth; i++) {
+      for (size_t j = 0; j < _params.laserCloudHeight; j++) {
+        for (int k = _params.laserCloudDepth - 1; k >= 1; k--) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j, k-1);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -580,10 +582,10 @@ void LaserMapping::process()
     _laserCloudCenDepth++;
   }
 
-  while (centerCubeK >= (int)_laserCloudDepth - 3) {
-    for (size_t i = 0; i < _laserCloudWidth; i++) {
-      for (size_t j = 0; j < _laserCloudHeight; j++) {
-        for (size_t k = 0; k < _laserCloudDepth - 1; k++) {
+  while (centerCubeK >= (int)_params.laserCloudDepth - 3) {
+    for (size_t i = 0; i < _params.laserCloudWidth; i++) {
+      for (size_t j = 0; j < _params.laserCloudHeight; j++) {
+        for (size_t k = 0; k < _params.laserCloudDepth - 1; k++) {
           const size_t indexA = toIndex(i, j, k);
           const size_t indexB = toIndex(i, j, k+1);
           std::swap( _laserCloudCornerArray[indexA], _laserCloudCornerArray[indexB] );
@@ -600,9 +602,9 @@ void LaserMapping::process()
   for (int i = centerCubeI - 2; i <= centerCubeI + 2; i++) {
     for (int j = centerCubeJ - 2; j <= centerCubeJ + 2; j++) {
       for (int k = centerCubeK - 2; k <= centerCubeK + 2; k++) {
-        if (i >= 0 && i < (int)_laserCloudWidth &&
-            j >= 0 && j < (int)_laserCloudHeight &&
-            k >= 0 && k < (int)_laserCloudDepth) {
+        if (i >= 0 && i < (int)_params.laserCloudWidth &&
+            j >= 0 && j < (int)_params.laserCloudHeight &&
+            k >= 0 && k < (int)_params.laserCloudDepth) {
 
           float centerX = 50.0f * (i - _laserCloudCenWidth);
           float centerY = 50.0f * (j - _laserCloudCenHeight);
@@ -635,7 +637,7 @@ void LaserMapping::process()
             }
           }
 
-          size_t cubeIdx = i + _laserCloudWidth*j + _laserCloudWidth * _laserCloudHeight * k;
+          size_t cubeIdx = i + _params.laserCloudWidth*j + _params.laserCloudWidth * _params.laserCloudHeight * k;
           if (isInLaserFOV) {
             _laserCloudValidInd.push_back(cubeIdx);
           }
@@ -696,10 +698,10 @@ void LaserMapping::process()
     if (pointSel.y + 25.0 < 0) cubeJ--;
     if (pointSel.z + 25.0 < 0) cubeK--;
 
-    if (cubeI >= 0 && cubeI < (int)_laserCloudWidth &&
-        cubeJ >= 0 && cubeJ < (int)_laserCloudHeight &&
-        cubeK >= 0 && cubeK < (int)_laserCloudDepth) {
-      size_t cubeInd = cubeI + _laserCloudWidth * cubeJ + _laserCloudWidth * _laserCloudHeight * cubeK;
+    if (cubeI >= 0 && cubeI < (int)_params.laserCloudWidth &&
+        cubeJ >= 0 && cubeJ < (int)_params.laserCloudHeight &&
+        cubeK >= 0 && cubeK < (int)_params.laserCloudDepth) {
+      size_t cubeInd = cubeI + _params.laserCloudWidth * cubeJ + _params.laserCloudWidth * _params.laserCloudHeight * cubeK;
       _laserCloudCornerArray[cubeInd]->push_back(pointSel);
     }
   }
@@ -716,10 +718,10 @@ void LaserMapping::process()
     if (pointSel.y + 25.0 < 0) cubeJ--;
     if (pointSel.z + 25.0 < 0) cubeK--;
 
-    if (cubeI >= 0 && cubeI < (int)_laserCloudWidth &&
-        cubeJ >= 0 && cubeJ < (int)_laserCloudHeight &&
-        cubeK >= 0 && cubeK < (int)_laserCloudDepth) {
-      size_t cubeInd = cubeI + _laserCloudWidth * cubeJ + _laserCloudWidth * _laserCloudHeight * cubeK;
+    if (cubeI >= 0 && cubeI < (int)_params.laserCloudWidth &&
+        cubeJ >= 0 && cubeJ < (int)_params.laserCloudHeight &&
+        cubeK >= 0 && cubeK < (int)_params.laserCloudDepth) {
+      size_t cubeInd = cubeI + _params.laserCloudWidth * cubeJ + _params.laserCloudWidth * _params.laserCloudHeight * cubeK;
       _laserCloudSurfArray[cubeInd]->push_back(pointSel);
     }
   }
@@ -794,7 +796,7 @@ void LaserMapping::optimizeTransformTobeMapped()
   pcl::PointCloud<pcl::PointXYZI> coeffSel;
 
   // start iterating
-  for (size_t iterCount = 0; iterCount < _maxIterations; iterCount++) {
+  for (size_t iterCount = 0; iterCount < _params.maxIterations; iterCount++) {
     laserCloudOri.clear();
     coeffSel.clear();
 
@@ -1040,7 +1042,7 @@ void LaserMapping::optimizeTransformTobeMapped()
                         pow(matX(4, 0) * 100, 2) +
                         pow(matX(5, 0) * 100, 2));
 
-    if (deltaR < _deltaRAbort && deltaT < _deltaTAbort) {
+    if (deltaR < _params.deltaRAbort && deltaT < _params.deltaTAbort) {
       ROS_DEBUG("[laserMapping] Optimization Done: %i, %f, %f", int(iterCount), deltaR, deltaT);
       isConverged = true;
       break;
@@ -1060,7 +1062,7 @@ void LaserMapping::publishResult()
 {
   // publish new map cloud according to the input output ratio
   _mapFrameCount++;
-  if (_mapFrameCount >= _mapFrameNum || _mapFrameNum < 0) {
+  if (_mapFrameCount >= _params.mapFrameNum || _params.mapFrameNum < 0) {
     _mapFrameCount = 0;
 
     // accumulate map cloud

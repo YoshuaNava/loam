@@ -71,17 +71,14 @@ struct ScanRegistrationParams {
   /** The curvature threshold below / above a point is considered a flat / corner point. */
   float surfaceCurvatureThreshold;
 
+  /** **/
+  int systemDelay;
+
   /** The model of the multi-beam LiDAR to use **/
-  std::string lidarName;
+  std::string lidarModel;
   
   /** **/
   float vAngleMin, vAngleMax;
-
-  /** Scan rings per cloud **/
-  int nScanRings;
-
-  /** **/
-  int systemDelay;
 
   ScanRegistrationParams(const float& scanPeriod_ = 0.1,
                         const int& imuHistorySize_ = 200,
@@ -91,7 +88,8 @@ struct ScanRegistrationParams {
                         const int& maxSurfaceFlat_ = 4,
                         const float& lessFlatFilterSize_ = 0.2,
                         const float& surfaceCurvatureThreshold_ = 0.1,
-                        const int& systemDelay_ = 20)
+                        const int& systemDelay_ = 20,
+                        const std::string lidarModel_ = "none")
   : scanPeriod(scanPeriod_),
     imuHistorySize(imuHistorySize_),
     nFeatureRegions(nFeatureRegions_),
@@ -101,7 +99,8 @@ struct ScanRegistrationParams {
     maxSurfaceFlat(maxSurfaceFlat_),
     lessFlatFilterSize(lessFlatFilterSize_),
     surfaceCurvatureThreshold(surfaceCurvatureThreshold_),
-    systemDelay(systemDelay_)
+    systemDelay(systemDelay_),
+    lidarModel(lidarModel_)
   { }
 
 };

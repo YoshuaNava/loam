@@ -104,7 +104,7 @@ private:
 class MultiScanRegistration : virtual public ScanRegistration {
 public:
   MultiScanRegistration(const MultiScanMapper& scanMapper = MultiScanMapper(),
-                        const RegistrationParams& config = RegistrationParams());
+                        const ScanRegistrationParams& params = ScanRegistrationParams());
 
 
   /** \brief Setup component in active mode.

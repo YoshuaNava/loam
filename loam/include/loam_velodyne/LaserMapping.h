@@ -36,6 +36,7 @@
 #include "loam_utils/common.h" 
 #include "loam_utils/Twist.h"
 #include "loam_utils/CircularBuffer.h"
+#include "loam/Parameters.h"
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
@@ -87,8 +88,7 @@ typedef struct IMUState2 {
  */
 class LaserMapping {
 public:
-  explicit LaserMapping(const float& scanPeriod = 0.1,
-                        const size_t& maxIterations = 30);
+  explicit LaserMapping(const LaserMappingParams params = LaserMappingParams());
 
   /** \brief Setup component in active mode.
    *
@@ -158,27 +158,27 @@ private:
 
   size_t toIndex(int i, int j, int k) const
   {
-    return i + _laserCloudWidth * j + _laserCloudWidth * _laserCloudHeight * k;
+    return i + _params.laserCloudWidth * j + _params.laserCloudWidth * _params.laserCloudHeight * k;
   }
 
+  LaserMappingParams _params;
 
-  float _scanPeriod;          ///< time per scan
-  const int _stackFrameNum;
-  const int _mapFrameNum;
   long _frameCount;
   long _mapFrameCount;
-
-  size_t _maxIterations;  ///< maximum number of iterations
-  float _deltaTAbort;     ///< optimization abort threshold for deltaT
-  float _deltaRAbort;     ///< optimization abort threshold for deltaR
 
   int _laserCloudCenWidth;
   int _laserCloudCenHeight;
   int _laserCloudCenDepth;
-  const size_t _laserCloudWidth;
-  const size_t _laserCloudHeight;
-  const size_t _laserCloudDepth;
-  const size_t _laserCloudNum;
+
+  Time _timeLaserCloudCornerLast;   ///< time of current last corner cloud
+  Time _timeLaserCloudSurfLast;     ///< time of current last surface cloud
+  Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
+  Time _timeLaserOdometry;          ///< time of current laser odometry
+
+  bool _newLaserCloudCornerLast;  ///< flag if a new last corner cloud has been received
+  bool _newLaserCloudSurfLast;    ///< flag if a new last surface cloud has been received
+  bool _newLaserCloudFullRes;     ///< flag if a new full resolution cloud has been received
+  bool _newLaserOdometry;         ///< flag if a new laser odometry has been received
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloudCornerLast;   ///< last corner points cloud
   pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloudSurfLast;     ///< last surface points cloud
@@ -201,16 +201,6 @@ private:
 
   std::vector<size_t> _laserCloudValidInd;
   std::vector<size_t> _laserCloudSurroundInd;
-
-  Time _timeLaserCloudCornerLast;   ///< time of current last corner cloud
-  Time _timeLaserCloudSurfLast;     ///< time of current last surface cloud
-  Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
-  Time _timeLaserOdometry;          ///< time of current laser odometry
-
-  bool _newLaserCloudCornerLast;  ///< flag if a new last corner cloud has been received
-  bool _newLaserCloudSurfLast;    ///< flag if a new last surface cloud has been received
-  bool _newLaserCloudFullRes;     ///< flag if a new full resolution cloud has been received
-  bool _newLaserOdometry;         ///< flag if a new laser odometry has been received
 
   Twist _transformSum;
   Twist _transformIncre;

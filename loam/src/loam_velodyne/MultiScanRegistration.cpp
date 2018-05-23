@@ -71,8 +71,8 @@ int MultiScanMapper::getRingForAngle(const float& angle) {
 
 
 MultiScanRegistration::MultiScanRegistration(const MultiScanMapper& scanMapper,
-                                             const RegistrationParams& config)
-    : ScanRegistration(config),
+                                             const ScanRegistrationParams& params)
+    : ScanRegistration(params),
       _systemDelay(SYSTEM_DELAY),
       _scanMapper(scanMapper)
 {
@@ -88,47 +88,44 @@ bool MultiScanRegistration::setup(ros::NodeHandle& node,
     return false;
   }
 
-  // fetch scan mapping params
-  std::string lidarName;
+  const char* module_name = "MultiScanRegistration:";
 
-  if (privateNode.getParam("lidar", lidarName)) {
-    if (lidarName == "VLP-16") {
+  float vAngleMin, vAngleMax;
+  int nScanRings;
+
+  // fetch scan matching params
+  if (node.getParam("/loam/registration/lidar_model", _params.lidarModel)) {
+    if (_params.lidarModel == "VLP-16") {
       _scanMapper = MultiScanMapper::Velodyne_VLP_16();
-    } else if (lidarName == "HDL-32") {
+    } else if (_params.lidarModel == "HDL-32") {
       _scanMapper = MultiScanMapper::Velodyne_HDL_32();
-    } else if (lidarName == "HDL-64E") {
+    } else if (_params.lidarModel == "HDL-64E") {
       _scanMapper = MultiScanMapper::Velodyne_HDL_64E();
     } else {
-      ROS_ERROR("Invalid lidar parameter: %s (only \"VLP-16\", \"HDL-32\" and \"HDL-64E\" are supported)", lidarName.c_str());
+      ROS_ERROR("%s: Invalid lidar parameter: %s (only \"VLP-16\", \"HDL-32\" and \"HDL-64E\" are supported)", module_name, _params.lidarModel.c_str());
       return false;
     }
+    ROS_INFO("%s: Set  %s  scan mapper.", module_name, _params.lidarModel.c_str());
 
-    ROS_INFO("Set  %s  scan mapper.", lidarName.c_str());
-    if (!privateNode.hasParam("scanPeriod")) {
-      _config.scanPeriod = 0.1;
-      ROS_INFO("Set scanPeriod: %f", _config.scanPeriod);
+  } else if (node.getParam("/loam/registration/min_vertical_angle", vAngleMin) &&
+      node.getParam("/loam/registration/max_vertical_angle", vAngleMax) &&
+      node.getParam("/loam/registration/n_scan_rings", nScanRings)) {
+    if (vAngleMin >= vAngleMax) {
+      ROS_ERROR("%s: Invalid vertical range (min >= max)", module_name);
+      return false;
+    } else if (nScanRings < 2) {
+      ROS_ERROR("%s: Invalid number of scan rings (n < 2)", module_name);
+      return false;
     }
-  } else {
-    float vAngleMin, vAngleMax;
-    int nScanRings;
+    _scanMapper.set(vAngleMin, vAngleMax, nScanRings);
+    ROS_INFO("%s: Set linear scan mapper from %g to %g degrees with %d scan rings.", module_name, vAngleMin, vAngleMax, nScanRings);
 
-    if (privateNode.getParam("minVerticalAngle", vAngleMin) &&
-        privateNode.getParam("maxVerticalAngle", vAngleMax) &&
-        privateNode.getParam("nScanRings", nScanRings)) {
-      if (vAngleMin >= vAngleMax) {
-        ROS_ERROR("Invalid vertical range (min >= max)");
-        return false;
-      } else if (nScanRings < 2) {
-        ROS_ERROR("Invalid number of scan rings (n < 2)");
-        return false;
-      }
-
-      _scanMapper.set(vAngleMin, vAngleMax, nScanRings);
-      ROS_INFO("Set linear scan mapper from %g to %g degrees with %d scan rings.", vAngleMin, vAngleMax, nScanRings);
-    }
   }
-
-
+  else {
+    ROS_ERROR("%s: Invalid scan registration parameters", module_name);
+    ROS_ERROR("%s: Default VLP-16 registration model will be used", module_name);
+  }
+  
   // subscribe to input cloud topic
   _subLaserCloud = node.subscribe<sensor_msgs::PointCloud2>
       ("/multi_scan_points", 2, &MultiScanRegistration::handleCloudMessage, this);
@@ -224,7 +221,7 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
     }
 
     // calculate relative scan time based on point orientation
-    float relTime = _config.scanPeriod * (ori - startOri) / (endOri - startOri);
+    float relTime = _params.scanPeriod * (ori - startOri) / (endOri - startOri);
     point.intensity = scanID + relTime;
 
     // project point to the start of the sweep using corresponding IMU data

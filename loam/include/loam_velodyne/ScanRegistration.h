@@ -38,6 +38,7 @@
 #include "loam_utils/Angle.h"
 #include "loam_utils/Vector3.h"
 #include "loam_utils/CircularBuffer.h"
+#include "loam/Parameters.h"
 
 #include <stdint.h>
 #include <vector>
@@ -60,57 +61,6 @@ enum PointLabel {
   SURFACE_LESS_FLAT = 0,  ///< less flat surface point
   SURFACE_FLAT = -1       ///< flat surface point
 };
-
-
-
-/** Scan Registration configuration parameters. */
-class RegistrationParams {
-public:
-  RegistrationParams(const float& scanPeriod_ = 0.1,
-                     const int& imuHistorySize_ = 200,
-                     const int& nFeatureRegions_ = 6,
-                     const int& curvatureRegion_ = 5,
-                     const int& maxCornerSharp_ = 2,
-                     const int& maxSurfaceFlat_ = 4,
-                     const float& lessFlatFilterSize_ = 0.2,
-                     const float& surfaceCurvatureThreshold_ = 0.1);
-
-
-  /** \brief Parse node parameter.
-   *
-   * @param nh the ROS node handle
-   * @return true, if all specified parameters are valid, false if at least one specified parameter is invalid
-   */
-  bool parseParams(const ros::NodeHandle& nh);
-
-  /** The time per scan. */
-  float scanPeriod;
-
-  /** The size of the IMU history state buffer. */
-  int imuHistorySize;
-
-  /** The number of (equally sized) regions used to distribute the feature extraction within a scan. */
-  int nFeatureRegions;
-
-  /** The number of surrounding points (+/- region around a point) used to calculate a point curvature. */
-  int curvatureRegion;
-
-  /** The maximum number of sharp corner points per feature region. */
-  int maxCornerSharp;
-
-  /** The maximum number of less sharp corner points per feature region. */
-  int maxCornerLessSharp;
-
-  /** The maximum number of flat surface points per feature region. */
-  int maxSurfaceFlat;
-
-  /** The voxel size used for down sizing the remaining less flat surface points. */
-  float lessFlatFilterSize;
-
-  /** The curvature threshold below / above a point is considered a flat / corner point. */
-  float surfaceCurvatureThreshold;
-};
-
 
 
 /** IMU state data. */
@@ -175,7 +125,7 @@ typedef struct IMUState {
  */
 class ScanRegistration {
 public:
-  explicit ScanRegistration(const RegistrationParams& config = RegistrationParams());
+  explicit ScanRegistration(const ScanRegistrationParams& params = ScanRegistrationParams());
 
   /** \brief Setup component.
    *
@@ -264,7 +214,7 @@ private:
 
 
 protected:
-  RegistrationParams _config;   ///< registration parameter
+  ScanRegistrationParams _params;   ///< registration parameter
 
   Time _sweepStart;                  ///< time stamp of beginning of current sweep
   Time _scanTime;                    ///< time stamp of most recent scan

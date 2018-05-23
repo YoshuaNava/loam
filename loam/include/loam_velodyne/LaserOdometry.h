@@ -36,6 +36,7 @@
 #include "loam_utils/common.h" 
 #include "loam_utils/Twist.h"
 #include "loam_utils/nanoflann_pcl.h"
+#include "loam/Parameters.h"
 
 #include <ros/node_handle.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -53,9 +54,7 @@ namespace loam {
  */
 class LaserOdometry {
 public:
-  explicit LaserOdometry(const float& scanPeriod = 0.1,
-                         const uint16_t& ioRatio = 1,
-                         const size_t& maxIterations = 15);
+  explicit LaserOdometry(const LaserOdometryParams& params = LaserOdometryParams());
 
   /** \brief Setup component.
    *
@@ -142,14 +141,25 @@ protected:
   void publishResult();
 
 private:
-  float _scanPeriod;       ///< time per scan
-  uint16_t _ioRatio;       ///< ratio of input to output frames
+
+  LaserOdometryParams _params;
+
   bool _systemInited;      ///< initialization flag
   long _frameCount;        ///< number of processed frames
 
-  size_t _maxIterations;   ///< maximum number of iterations
-  float _deltaTAbort;     ///< optimization abort threshold for deltaT
-  float _deltaRAbort;     ///< optimization abort threshold for deltaR
+  Time _timeCornerPointsSharp;      ///< time of current sharp corner cloud
+  Time _timeCornerPointsLessSharp;  ///< time of current less sharp corner cloud
+  Time _timeSurfPointsFlat;         ///< time of current flat surface cloud
+  Time _timeSurfPointsLessFlat;     ///< time of current less flat surface cloud
+  Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
+  Time _timeImuTrans;               ///< time of current IMU transformation information
+
+  bool _newCornerPointsSharp;       ///< flag if a new sharp corner cloud has been received
+  bool _newCornerPointsLessSharp;   ///< flag if a new less sharp corner cloud has been received
+  bool _newSurfPointsFlat;          ///< flag if a new flat surface cloud has been received
+  bool _newSurfPointsLessFlat;      ///< flag if a new less flat surface cloud has been received
+  bool _newLaserCloudFullRes;       ///< flag if a new full resolution cloud has been received
+  bool _newImuTrans;                ///< flag if a new IMU transformation information cloud has been received
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr _cornerPointsSharp;      ///< sharp corner points cloud
   pcl::PointCloud<pcl::PointXYZI>::Ptr _cornerPointsLessSharp;  ///< less sharp corner points cloud
@@ -165,20 +175,6 @@ private:
 
   nanoflann::KdTreeFLANN<pcl::PointXYZI> _lastCornerKDTree;   ///< last corner cloud KD-tree
   nanoflann::KdTreeFLANN<pcl::PointXYZI> _lastSurfaceKDTree;  ///< last surface cloud KD-tree
-
-  Time _timeCornerPointsSharp;      ///< time of current sharp corner cloud
-  Time _timeCornerPointsLessSharp;  ///< time of current less sharp corner cloud
-  Time _timeSurfPointsFlat;         ///< time of current flat surface cloud
-  Time _timeSurfPointsLessFlat;     ///< time of current less flat surface cloud
-  Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
-  Time _timeImuTrans;               ///< time of current IMU transformation information
-
-  bool _newCornerPointsSharp;       ///< flag if a new sharp corner cloud has been received
-  bool _newCornerPointsLessSharp;   ///< flag if a new less sharp corner cloud has been received
-  bool _newSurfPointsFlat;          ///< flag if a new flat surface cloud has been received
-  bool _newSurfPointsLessFlat;      ///< flag if a new less flat surface cloud has been received
-  bool _newLaserCloudFullRes;       ///< flag if a new full resolution cloud has been received
-  bool _newImuTrans;                ///< flag if a new IMU transformation information cloud has been received
 
   std::vector<int> _pointSearchCornerInd1;    ///< first corner point search index buffer
   std::vector<int> _pointSearchCornerInd2;    ///< second corner point search index buffer

@@ -39,142 +39,14 @@
 
 namespace loam {
 
-
-RegistrationParams::RegistrationParams(const float& scanPeriod_,
-                                       const int& imuHistorySize_,
-                                       const int& nFeatureRegions_,
-                                       const int& curvatureRegion_,
-                                       const int& maxCornerSharp_,
-                                       const int& maxSurfaceFlat_,
-                                       const float& lessFlatFilterSize_,
-                                       const float& surfaceCurvatureThreshold_)
-    : scanPeriod(scanPeriod_),
-      imuHistorySize(imuHistorySize_),
-      nFeatureRegions(nFeatureRegions_),
-      curvatureRegion(curvatureRegion_),
-      maxCornerSharp(maxCornerSharp_),
-      maxCornerLessSharp(10 * maxCornerSharp_),
-      maxSurfaceFlat(maxSurfaceFlat_),
-      lessFlatFilterSize(lessFlatFilterSize_),
-      surfaceCurvatureThreshold(surfaceCurvatureThreshold_)
-{
-
-};
-
-
-
-bool RegistrationParams::parseParams(const ros::NodeHandle& nh) {
-  bool success = true;
-  int iParam = 0;
-  float fParam = 0;
-
-  if (nh.getParam("scanPeriod", fParam)) {
-    if (fParam <= 0) {
-      ROS_ERROR("Invalid scanPeriod parameter: %f (expected > 0)", fParam);
-      success = false;
-    } else {
-      scanPeriod = fParam;
-      ROS_INFO("Set scanPeriod: %g", fParam);
-    }
-  }
-
-  if (nh.getParam("imuHistorySize", iParam)) {
-    if (iParam < 1) {
-      ROS_ERROR("Invalid imuHistorySize parameter: %d (expected >= 1)", iParam);
-      success = false;
-    } else {
-      imuHistorySize = iParam;
-      ROS_INFO("Set imuHistorySize: %d", iParam);
-    }
-  }
-
-  if (nh.getParam("featureRegions", iParam)) {
-    if (iParam < 1) {
-      ROS_ERROR("Invalid featureRegions parameter: %d (expected >= 1)", iParam);
-      success = false;
-    } else {
-      nFeatureRegions = iParam;
-      ROS_INFO("Set nFeatureRegions: %d", iParam);
-    }
-  }
-
-  if (nh.getParam("curvatureRegion", iParam)) {
-    if (iParam < 1) {
-      ROS_ERROR("Invalid curvatureRegion parameter: %d (expected >= 1)", iParam);
-      success = false;
-    } else {
-      curvatureRegion = iParam;
-      ROS_INFO("Set curvatureRegion: +/- %d", iParam);
-    }
-  }
-
-  if (nh.getParam("maxCornerSharp", iParam)) {
-    if (iParam < 1) {
-      ROS_ERROR("Invalid maxCornerSharp parameter: %d (expected >= 1)", iParam);
-      success = false;
-    } else {
-      maxCornerSharp = iParam;
-      maxCornerLessSharp = 10 * iParam;
-      ROS_INFO("Set maxCornerSharp / less sharp: %d / %d", iParam, maxCornerLessSharp);
-    }
-  }
-
-  if (nh.getParam("maxCornerLessSharp", iParam)) {
-    if (iParam < maxCornerSharp) {
-      ROS_ERROR("Invalid maxCornerLessSharp parameter: %d (expected >= %d)", iParam, maxCornerSharp);
-      success = false;
-    } else {
-      maxCornerLessSharp = iParam;
-      ROS_INFO("Set maxCornerLessSharp: %d", iParam);
-    }
-  }
-
-  if (nh.getParam("maxSurfaceFlat", iParam)) {
-    if (iParam < 1) {
-      ROS_ERROR("Invalid maxSurfaceFlat parameter: %d (expected >= 1)", iParam);
-      success = false;
-    } else {
-      maxSurfaceFlat = iParam;
-      ROS_INFO("Set maxSurfaceFlat: %d", iParam);
-    }
-  }
-
-  if (nh.getParam("surfaceCurvatureThreshold", fParam)) {
-    if (fParam < 0.001) {
-      ROS_ERROR("Invalid surfaceCurvatureThreshold parameter: %f (expected >= 0.001)", fParam);
-      success = false;
-    } else {
-      surfaceCurvatureThreshold = fParam;
-      ROS_INFO("Set surfaceCurvatureThreshold: %g", fParam);
-    }
-  }
-
-  if (nh.getParam("lessFlatFilterSize", fParam)) {
-    if (fParam < 0.001) {
-      ROS_ERROR("Invalid lessFlatFilterSize parameter: %f (expected >= 0.001)", fParam);
-      success = false;
-    } else {
-      lessFlatFilterSize = fParam;
-      ROS_INFO("Set lessFlatFilterSize: %g", fParam);
-    }
-  }
-
-  return success;
-}
-
-
-
-
-
-
-ScanRegistration::ScanRegistration(const RegistrationParams& config)
-      : _config(config),
-        _sweepStart(),
-        _scanTime(),
+ScanRegistration::ScanRegistration(const ScanRegistrationParams& params)
+      : _params(params),
+        _sweepStart(0),
+        _scanTime(0),
         _imuStart(),
         _imuCur(),
         _imuIdx(0),
-        _imuHistory(_config.imuHistorySize),
+        _imuHistory(_params.imuHistorySize),
         _laserCloud(),
         _cornerPointsSharp(),
         _cornerPointsLessSharp(),
@@ -194,10 +66,95 @@ ScanRegistration::ScanRegistration(const RegistrationParams& config)
 bool ScanRegistration::setup(ros::NodeHandle& node,
                              ros::NodeHandle& privateNode)
 {
-  if (!_config.parseParams(privateNode)) {
-    return false;
+  const char* module_name = "ScanRegistration";
+  
+  // fetch laser mapping params
+  float fParam;
+  int iParam;
+
+  if (node.getParam("/loam/scan_period", fParam)) {
+    if (fParam <= 0) {
+      ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
+    } else {
+      _params.scanPeriod = fParam;
+      ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
+    }
   }
-  _imuHistory.ensureCapacity(_config.imuHistorySize);
+
+  if (node.getParam("/loam/registration/imu_history_size", iParam)) {
+    if (iParam < 1) {
+      ROS_ERROR("%s: Invalid imu_history_size parameter: %d (expected >= 1)", module_name, iParam);
+    } else {
+      _params.imuHistorySize = iParam;
+      ROS_INFO("%s: Set imu_history_size: %d", module_name, iParam);
+    }
+  }
+
+  if (node.getParam("/loam/registration/n_feature_regions", iParam)) {
+    if (iParam < 1) {
+      ROS_ERROR("%s: Invalid n_feature_regions parameter: %d (expected >= 1)", module_name, iParam);
+    } else {
+      _params.nFeatureRegions = iParam;
+      ROS_INFO("%s: Set n_feature_regions: %d", module_name, iParam);
+    }
+  }
+
+  if (node.getParam("/loam/registration/curvature_region", iParam)) {
+    if (iParam < 1) {
+      ROS_ERROR("%s: Invalid curvature_region parameter: %d (expected >= 1)", module_name, iParam);
+    } else {
+      _params.curvatureRegion = iParam;
+      ROS_INFO("%s: Set curvature_region: +/- %d", module_name, iParam);
+    }
+  }
+
+  if (node.getParam("/loam/registration/max_corner_sharp", iParam)) {
+    if (iParam < 1) {
+      ROS_ERROR("%s: Invalid max_corner_sharp parameter: %d (expected >= 1)", module_name, iParam);
+    } else {
+      _params.maxCornerSharp = iParam;
+      _params.maxCornerLessSharp = 10 * iParam;
+      ROS_INFO("%s: Set max_corner_sharp / less sharp: %d / %d", module_name, iParam, _params.maxCornerLessSharp);
+    }
+  }
+
+  if (node.getParam("/loam/registration/max_corner_less_sharp", iParam)) {
+    if (iParam < _params.maxCornerSharp) {
+      ROS_ERROR("%s: Invalid max_corner_less_sharp parameter: %d (expected >= %d)", module_name, iParam, _params.maxCornerSharp);
+    } else {
+      _params.maxCornerLessSharp = iParam;
+      ROS_INFO("%s: Set max_corner_less_sharp: %d", module_name, iParam);
+    }
+  }
+
+  if (node.getParam("/loam/registration/max_surface_flat", iParam)) {
+    if (iParam < 1) {
+      ROS_ERROR("%s: Invalid max_surface_flat parameter: %d (expected >= 1)", module_name, iParam);
+    } else {
+      _params.maxSurfaceFlat = iParam;
+      ROS_INFO("%s: Set max_surface_flat: %d", module_name, iParam);
+    }
+  }
+
+  if (node.getParam("/loam/registration/surface_curvature_threshold", fParam)) {
+    if (fParam < 0.001) {
+      ROS_ERROR("%s: Invalid surface_curvature_threshold parameter: %f (expected >= 0.001)", module_name, fParam);
+    } else {
+      _params.surfaceCurvatureThreshold = fParam;
+      ROS_INFO("%s: Set surface_curvature_threshold: %g", module_name, fParam);
+    }
+  }
+
+  if (node.getParam("/loam/registration/less_flat_filter_size", fParam)) {
+    if (fParam < 0.001) {
+      ROS_ERROR("%s: Invalid less_flat_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
+    } else {
+      _params.lessFlatFilterSize = fParam;
+      ROS_INFO("%s: Set less_flat_filter_size: %g", module_name, fParam);
+    }
+  }
+
+  _imuHistory.ensureCapacity(_params.imuHistorySize);
 
   // subscribe to IMU topic
   _subImu = node.subscribe<sensor_msgs::Imu>("/imu/data", 50, &ScanRegistration::handleIMUMessage, this);
@@ -337,7 +294,7 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
     size_t scanEndIdx = _scanIndices[i].second;
 
     // skip empty scans
-    if (scanEndIdx <= scanStartIdx + 2 * _config.curvatureRegion) {
+    if (scanEndIdx <= scanStartIdx + 2 * _params.curvatureRegion) {
       continue;
     }
 
@@ -345,11 +302,11 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
     setScanBuffersFor(scanStartIdx, scanEndIdx);
 
     // extract features from equally sized scan regions
-    for (int j = 0; j < _config.nFeatureRegions; j++) {
-      size_t sp = ((scanStartIdx + _config.curvatureRegion) * (_config.nFeatureRegions - j)
-                   + (scanEndIdx - _config.curvatureRegion) * j) / _config.nFeatureRegions;
-      size_t ep = ((scanStartIdx + _config.curvatureRegion) * (_config.nFeatureRegions - 1 - j)
-                   + (scanEndIdx - _config.curvatureRegion) * (j + 1)) / _config.nFeatureRegions - 1;
+    for (int j = 0; j < _params.nFeatureRegions; j++) {
+      size_t sp = ((scanStartIdx + _params.curvatureRegion) * (_params.nFeatureRegions - j)
+                   + (scanEndIdx - _params.curvatureRegion) * j) / _params.nFeatureRegions;
+      size_t ep = ((scanStartIdx + _params.curvatureRegion) * (_params.nFeatureRegions - 1 - j)
+                   + (scanEndIdx - _params.curvatureRegion) * (j + 1)) / _params.nFeatureRegions - 1;
 
       // skip empty regions
       if (ep <= sp) {
@@ -364,16 +321,16 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
 
       // extract corner features
       int largestPickedNum = 0;
-      for (size_t k = regionSize; k > 0 && largestPickedNum < _config.maxCornerLessSharp;) {
+      for (size_t k = regionSize; k > 0 && largestPickedNum < _params.maxCornerLessSharp;) {
         size_t idx = _regionSortIndices[--k];
         size_t scanIdx = idx - scanStartIdx;
         size_t regionIdx = idx - sp;
 
         if (_scanNeighborPicked[scanIdx] == 0 &&
-            _regionCurvature[regionIdx] > _config.surfaceCurvatureThreshold) {
+            _regionCurvature[regionIdx] > _params.surfaceCurvatureThreshold) {
 
           largestPickedNum++;
-          if (largestPickedNum <= _config.maxCornerSharp) {
+          if (largestPickedNum <= _params.maxCornerSharp) {
             _regionLabel[regionIdx] = CORNER_SHARP;
             _cornerPointsSharp.push_back(_laserCloud[idx]);
           } else {
@@ -387,13 +344,13 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
 
       // extract flat surface features
       size_t smallestPickedNum = 0;
-      for (size_t k = 0; k < regionSize && smallestPickedNum < (size_t)_config.maxSurfaceFlat; k++) {
+      for (size_t k = 0; k < regionSize && smallestPickedNum < (size_t)_params.maxSurfaceFlat; k++) {
         size_t idx = _regionSortIndices[k];
         size_t scanIdx = idx - scanStartIdx;
         size_t regionIdx = idx - sp;
 
         if (_scanNeighborPicked[scanIdx] == 0 &&
-            _regionCurvature[regionIdx] < _config.surfaceCurvatureThreshold) {
+            _regionCurvature[regionIdx] < _params.surfaceCurvatureThreshold) {
 
           smallestPickedNum++;
           _regionLabel[regionIdx] = SURFACE_FLAT;
@@ -415,7 +372,7 @@ void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
     pcl::PointCloud<pcl::PointXYZI> surfPointsLessFlatScanDS;
     pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
     downSizeFilter.setInputCloud(surfPointsLessFlatScan);
-    downSizeFilter.setLeafSize(_config.lessFlatFilterSize, _config.lessFlatFilterSize, _config.lessFlatFilterSize);
+    downSizeFilter.setLeafSize(_params.lessFlatFilterSize, _params.lessFlatFilterSize, _params.lessFlatFilterSize);
     downSizeFilter.filter(surfPointsLessFlatScanDS);
 
     _surfacePointsLessFlat += surfPointsLessFlatScanDS;
@@ -434,14 +391,14 @@ void ScanRegistration::setRegionBuffersFor(const size_t& startIdx,
   _regionLabel.assign(regionSize, SURFACE_LESS_FLAT);
 
   // calculate point curvatures and reset sort indices
-  float pointWeight = -2 * _config.curvatureRegion;
+  float pointWeight = -2 * _params.curvatureRegion;
 
   for (size_t i = startIdx, regionIdx = 0; i <= endIdx; i++, regionIdx++) {
     float diffX = pointWeight * _laserCloud[i].x;
     float diffY = pointWeight * _laserCloud[i].y;
     float diffZ = pointWeight * _laserCloud[i].z;
 
-    for (int j = 1; j <= _config.curvatureRegion; j++) {
+    for (int j = 1; j <= _params.curvatureRegion; j++) {
       diffX += _laserCloud[i + j].x + _laserCloud[i - j].x;
       diffY += _laserCloud[i + j].y + _laserCloud[i - j].y;
       diffZ += _laserCloud[i + j].z + _laserCloud[i - j].z;
@@ -471,7 +428,7 @@ void ScanRegistration::setScanBuffersFor(const size_t& startIdx,
   _scanNeighborPicked.assign(scanSize, 0);
 
   // mark unreliable points as picked
-  for (size_t i = startIdx + _config.curvatureRegion; i < endIdx - _config.curvatureRegion; i++) {
+  for (size_t i = startIdx + _params.curvatureRegion; i < endIdx - _params.curvatureRegion; i++) {
     const pcl::PointXYZI& previousPoint = (_laserCloud[i - 1]);
     const pcl::PointXYZI& point = (_laserCloud[i]);
     const pcl::PointXYZI& nextPoint = (_laserCloud[i + 1]);
@@ -486,7 +443,7 @@ void ScanRegistration::setScanBuffersFor(const size_t& startIdx,
         float weighted_distance = std::sqrt(calcSquaredDiff(nextPoint, point, depth2 / depth1)) / depth2;
 
         if (weighted_distance < 0.1) {
-          std::fill_n(&_scanNeighborPicked[i - startIdx - _config.curvatureRegion], _config.curvatureRegion + 1, 1);
+          std::fill_n(&_scanNeighborPicked[i - startIdx - _params.curvatureRegion], _params.curvatureRegion + 1, 1);
 
           continue;
         }
@@ -494,7 +451,7 @@ void ScanRegistration::setScanBuffersFor(const size_t& startIdx,
         float weighted_distance = std::sqrt(calcSquaredDiff(point, nextPoint, depth1 / depth2)) / depth1;
 
         if (weighted_distance < 0.1) {
-          std::fill_n(&_scanNeighborPicked[i - startIdx + 1], _config.curvatureRegion + 1, 1);
+          std::fill_n(&_scanNeighborPicked[i - startIdx + 1], _params.curvatureRegion + 1, 1);
         }
       }
     }
@@ -515,7 +472,7 @@ void ScanRegistration::markAsPicked(const size_t& cloudIdx,
 {
   _scanNeighborPicked[scanIdx] = 1;
 
-  for (int i = 1; i <= _config.curvatureRegion; i++) {
+  for (int i = 1; i <= _params.curvatureRegion; i++) {
     if (calcSquaredDiff(_laserCloud[cloudIdx + i], _laserCloud[cloudIdx + i - 1]) > 0.05) {
       break;
     }
@@ -523,7 +480,7 @@ void ScanRegistration::markAsPicked(const size_t& cloudIdx,
     _scanNeighborPicked[scanIdx + i] = 1;
   }
 
-  for (int i = 1; i <= _config.curvatureRegion; i++) {
+  for (int i = 1; i <= _params.curvatureRegion; i++) {
     if (calcSquaredDiff(_laserCloud[cloudIdx - i], _laserCloud[cloudIdx - i + 1]) > 0.05) {
       break;
     }
