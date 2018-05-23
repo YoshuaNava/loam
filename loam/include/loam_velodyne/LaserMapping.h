@@ -36,6 +36,7 @@
 #include "loam_utils/common.h" 
 #include "loam_utils/Twist.h"
 #include "loam_utils/CircularBuffer.h"
+#include "loam_utils/IMUState.h"
 #include "loam/Parameters.h"
 
 #include <ros/ros.h>
@@ -50,38 +51,6 @@
 
 
 namespace loam {
-
-/** IMU state data. */
-typedef struct IMUState2 {
-  /** The time of the measurement leading to this state (in seconds). */
-  Time stamp;
-
-  /** The current roll angle. */
-  Angle roll;
-
-  /** The current pitch angle. */
-  Angle pitch;
-
-  /** \brief Interpolate between two IMU states.
-   *
-   * @param start the first IMU state
-   * @param end the second IMU state
-   * @param ratio the interpolation ratio
-   * @param result the target IMU state for storing the interpolation result
-   */
-  static void interpolate(const IMUState2& start,
-                          const IMUState2& end,
-                          const float& ratio,
-                          IMUState2& result)
-  {
-    float invRatio = 1 - ratio;
-
-    result.roll = start.roll.rad() * invRatio + end.roll.rad() * ratio;
-    result.pitch = start.pitch.rad() * invRatio + end.pitch.rad() * ratio;
-  };
-} IMUState2;
-
-
 
 /** \brief Implementation of the LOAM laser mapping component.
  *
@@ -208,7 +177,7 @@ private:
   Twist _transformBefMapped;
   Twist _transformAftMapped;
 
-  CircularBuffer<IMUState2> _imuHistory;    ///< history of IMU states
+  CircularBuffer<IMUState> _imuHistory;    ///< history of IMU states
 
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterCorner;   ///< voxel filter for down sizing corner clouds
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterSurf;     ///< voxel filter for down sizing surface clouds

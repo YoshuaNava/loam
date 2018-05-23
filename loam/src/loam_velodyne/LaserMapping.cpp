@@ -293,7 +293,7 @@ void LaserMapping::transformUpdate()
       imuIdx++;
     }
 
-    IMUState2 imuCur;
+    IMUState imuCur;
 
     if (imuIdx == 0 || (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _params.scanPeriod > 0) {
       // scan time newer then newest or older than oldest IMU message
@@ -302,7 +302,7 @@ void LaserMapping::transformUpdate()
       float ratio = ((_imuHistory[imuIdx].stamp - _timeLaserOdometry) - _params.scanPeriod)
                         / (_imuHistory[imuIdx].stamp - _imuHistory[imuIdx - 1].stamp);
 
-      IMUState2::interpolate(_imuHistory[imuIdx], _imuHistory[imuIdx - 1], ratio, imuCur);
+      IMUState::interpolate(_imuHistory[imuIdx], _imuHistory[imuIdx - 1], ratio, imuCur);
     }
 
     _transformTobeMapped.rot_x = 0.998 * _transformTobeMapped.rot_x.rad() + 0.002 * imuCur.pitch.rad();
@@ -407,7 +407,7 @@ void LaserMapping::imuHandler(const sensor_msgs::Imu::ConstPtr& imuIn)
   tf::quaternionMsgToTF(imuIn->orientation, orientation);
   tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
 
-  IMUState2 newState;
+  IMUState newState;
 
   newState.stamp = imuIn->header.stamp.toSec();
   newState.roll = roll;
