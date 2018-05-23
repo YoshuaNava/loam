@@ -116,7 +116,7 @@ public:
 /** IMU state data. */
 typedef struct IMUState {
   /** The time of the measurement leading to this state (in seconds). */
-  ros::Time stamp;
+  Time stamp;
 
   /** The current roll angle. */
   Angle roll;
@@ -266,8 +266,8 @@ private:
 protected:
   RegistrationParams _config;   ///< registration parameter
 
-  ros::Time _sweepStart;                  ///< time stamp of beginning of current sweep
-  ros::Time _scanTime;                    ///< time stamp of most recent scan
+  Time _sweepStart;                  ///< time stamp of beginning of current sweep
+  Time _scanTime;                    ///< time stamp of most recent scan
   IMUState _imuStart;                     ///< the interpolated IMU state corresponding to the start time of the currently processed laser scan
   IMUState _imuCur;                       ///< the interpolated IMU state corresponding to the time of the currently processed laser scan point
   Vector3 _imuPositionShift;              ///< position shift between accumulated IMU position and interpolated IMU position

@@ -46,6 +46,9 @@
 
 namespace loam {
 
+typedef double Time;
+typedef size_t Key;
+
 const Eigen::Quaterniond rot_kitti(0, 0, 0, 1.0);
 
 /** \brief Construct a new point cloud message from the specified information and publish it via the given publisher.

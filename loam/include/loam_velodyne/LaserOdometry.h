@@ -33,7 +33,7 @@
 #ifndef LOAM_LASERODOMETRY_H
 #define LOAM_LASERODOMETRY_H
 
-
+#include "loam_utils/common.h" 
 #include "loam_utils/Twist.h"
 #include "loam_utils/nanoflann_pcl.h"
 
@@ -166,12 +166,12 @@ private:
   nanoflann::KdTreeFLANN<pcl::PointXYZI> _lastCornerKDTree;   ///< last corner cloud KD-tree
   nanoflann::KdTreeFLANN<pcl::PointXYZI> _lastSurfaceKDTree;  ///< last surface cloud KD-tree
 
-  ros::Time _timeCornerPointsSharp;      ///< time of current sharp corner cloud
-  ros::Time _timeCornerPointsLessSharp;  ///< time of current less sharp corner cloud
-  ros::Time _timeSurfPointsFlat;         ///< time of current flat surface cloud
-  ros::Time _timeSurfPointsLessFlat;     ///< time of current less flat surface cloud
-  ros::Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
-  ros::Time _timeImuTrans;               ///< time of current IMU transformation information
+  Time _timeCornerPointsSharp;      ///< time of current sharp corner cloud
+  Time _timeCornerPointsLessSharp;  ///< time of current less sharp corner cloud
+  Time _timeSurfPointsFlat;         ///< time of current flat surface cloud
+  Time _timeSurfPointsLessFlat;     ///< time of current less flat surface cloud
+  Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
+  Time _timeImuTrans;               ///< time of current IMU transformation information
 
   bool _newCornerPointsSharp;       ///< flag if a new sharp corner cloud has been received
   bool _newCornerPointsLessSharp;   ///< flag if a new less sharp corner cloud has been received

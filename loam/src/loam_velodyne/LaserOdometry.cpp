@@ -332,7 +332,7 @@ void LaserOdometry::accumulateRotation(Angle cx, Angle cy, Angle cz,
 
 void LaserOdometry::laserCloudSharpHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsSharpMsg)
 {
-  _timeCornerPointsSharp = cornerPointsSharpMsg->header.stamp;
+  _timeCornerPointsSharp = cornerPointsSharpMsg->header.stamp.toSec();
 
   _cornerPointsSharp->clear();
   pcl::fromROSMsg(*cornerPointsSharpMsg, *_cornerPointsSharp);
@@ -345,7 +345,7 @@ void LaserOdometry::laserCloudSharpHandler(const sensor_msgs::PointCloud2ConstPt
 
 void LaserOdometry::laserCloudLessSharpHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsLessSharpMsg)
 {
-  _timeCornerPointsLessSharp = cornerPointsLessSharpMsg->header.stamp;
+  _timeCornerPointsLessSharp = cornerPointsLessSharpMsg->header.stamp.toSec();
 
   _cornerPointsLessSharp->clear();
   pcl::fromROSMsg(*cornerPointsLessSharpMsg, *_cornerPointsLessSharp);
@@ -358,7 +358,7 @@ void LaserOdometry::laserCloudLessSharpHandler(const sensor_msgs::PointCloud2Con
 
 void LaserOdometry::laserCloudFlatHandler(const sensor_msgs::PointCloud2ConstPtr& surfPointsFlatMsg)
 {
-  _timeSurfPointsFlat = surfPointsFlatMsg->header.stamp;
+  _timeSurfPointsFlat = surfPointsFlatMsg->header.stamp.toSec();
 
   _surfPointsFlat->clear();
   pcl::fromROSMsg(*surfPointsFlatMsg, *_surfPointsFlat);
@@ -371,7 +371,7 @@ void LaserOdometry::laserCloudFlatHandler(const sensor_msgs::PointCloud2ConstPtr
 
 void LaserOdometry::laserCloudLessFlatHandler(const sensor_msgs::PointCloud2ConstPtr& surfPointsLessFlatMsg)
 {
-  _timeSurfPointsLessFlat = surfPointsLessFlatMsg->header.stamp;
+  _timeSurfPointsLessFlat = surfPointsLessFlatMsg->header.stamp.toSec();
 
   _surfPointsLessFlat->clear();
   pcl::fromROSMsg(*surfPointsLessFlatMsg, *_surfPointsLessFlat);
@@ -384,7 +384,7 @@ void LaserOdometry::laserCloudLessFlatHandler(const sensor_msgs::PointCloud2Cons
 
 void LaserOdometry::laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudFullResMsg)
 {
-  _timeLaserCloudFullRes = laserCloudFullResMsg->header.stamp;
+  _timeLaserCloudFullRes = laserCloudFullResMsg->header.stamp.toSec();
 
   _laserCloud->clear();
   pcl::fromROSMsg(*laserCloudFullResMsg, *_laserCloud);
@@ -397,7 +397,7 @@ void LaserOdometry::laserCloudFullResHandler(const sensor_msgs::PointCloud2Const
 
 void LaserOdometry::imuTransHandler(const sensor_msgs::PointCloud2ConstPtr& imuTransMsg)
 {
-  _timeImuTrans = imuTransMsg->header.stamp;
+  _timeImuTrans = imuTransMsg->header.stamp.toSec();
 
   pcl::PointCloud<pcl::PointXYZ> imuTrans;
   pcl::fromROSMsg(*imuTransMsg, imuTrans);
@@ -453,11 +453,11 @@ bool LaserOdometry::hasNewData()
 {
   return _newCornerPointsSharp && _newCornerPointsLessSharp && _newSurfPointsFlat &&
          _newSurfPointsLessFlat && _newLaserCloudFullRes && _newImuTrans &&
-         fabs((_timeCornerPointsSharp - _timeSurfPointsLessFlat).toSec()) < 0.005 &&
-         fabs((_timeCornerPointsLessSharp - _timeSurfPointsLessFlat).toSec()) < 0.005 &&
-         fabs((_timeSurfPointsFlat - _timeSurfPointsLessFlat).toSec()) < 0.005 &&
-         fabs((_timeLaserCloudFullRes - _timeSurfPointsLessFlat).toSec()) < 0.005 &&
-         fabs((_timeImuTrans - _timeSurfPointsLessFlat).toSec()) < 0.005;
+         fabs(_timeCornerPointsSharp - _timeSurfPointsLessFlat) < 0.005 &&
+         fabs(_timeCornerPointsLessSharp - _timeSurfPointsLessFlat) < 0.005 &&
+         fabs(_timeSurfPointsFlat - _timeSurfPointsLessFlat) < 0.005 &&
+         fabs(_timeLaserCloudFullRes - _timeSurfPointsLessFlat) < 0.005 &&
+         fabs(_timeImuTrans - _timeSurfPointsLessFlat) < 0.005;
 }
 
 
@@ -980,7 +980,7 @@ void LaserOdometry::publishResult()
                                                                               -_transformSum.rot_x.rad(),
                                                                               -_transformSum.rot_y.rad());
 
-  _laserOdometryMsg.header.stamp = _timeSurfPointsLessFlat;
+  _laserOdometryMsg.header.stamp = ros::Time(_timeSurfPointsLessFlat);
   _laserOdometryMsg.pose.pose.orientation.x = -geoQuat.y;
   _laserOdometryMsg.pose.pose.orientation.y = -geoQuat.z;
   _laserOdometryMsg.pose.pose.orientation.z = geoQuat.x;
@@ -990,7 +990,7 @@ void LaserOdometry::publishResult()
   _laserOdometryMsg.pose.pose.position.z = _transformSum.pos.z();
   _pubLaserOdometry.publish(_laserOdometryMsg);
 
-  _laserOdometryTrans.stamp_ = _timeSurfPointsLessFlat;
+  _laserOdometryTrans.stamp_ = ros::Time(_timeSurfPointsLessFlat);
   _laserOdometryTrans.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
   _laserOdometryTrans.setOrigin(tf::Vector3( _transformSum.pos.x(), _transformSum.pos.y(), _transformSum.pos.z()) );
   _tfBroadcaster.sendTransform(_laserOdometryTrans);
@@ -998,7 +998,7 @@ void LaserOdometry::publishResult()
 
   // publish cloud results according to the input output ratio
   if (_ioRatio < 2 || _frameCount % _ioRatio == 1) {
-    ros::Time sweepTime = _timeSurfPointsLessFlat;
+    ros::Time sweepTime(_timeSurfPointsLessFlat);
     transformToEnd(_laserCloud);  // transform full resolution cloud to sweep end before sending it
 
     publishCloudMsg(_pubLaserCloudCornerLast, *_lastCornerCloud, sweepTime, "/camera");

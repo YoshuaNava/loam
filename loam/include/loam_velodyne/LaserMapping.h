@@ -33,7 +33,7 @@
 #ifndef LOAM_LASERMAPPING_H
 #define LOAM_LASERMAPPING_H
 
-
+#include "loam_utils/common.h" 
 #include "loam_utils/Twist.h"
 #include "loam_utils/CircularBuffer.h"
 
@@ -53,7 +53,7 @@ namespace loam {
 /** IMU state data. */
 typedef struct IMUState2 {
   /** The time of the measurement leading to this state (in seconds). */
-  ros::Time stamp;
+  Time stamp;
 
   /** The current roll angle. */
   Angle roll;
@@ -202,10 +202,10 @@ private:
   std::vector<size_t> _laserCloudValidInd;
   std::vector<size_t> _laserCloudSurroundInd;
 
-  ros::Time _timeLaserCloudCornerLast;   ///< time of current last corner cloud
-  ros::Time _timeLaserCloudSurfLast;     ///< time of current last surface cloud
-  ros::Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
-  ros::Time _timeLaserOdometry;          ///< time of current laser odometry
+  Time _timeLaserCloudCornerLast;   ///< time of current last corner cloud
+  Time _timeLaserCloudSurfLast;     ///< time of current last surface cloud
+  Time _timeLaserCloudFullRes;      ///< time of current full resolution cloud
+  Time _timeLaserOdometry;          ///< time of current laser odometry
 
   bool _newLaserCloudCornerLast;  ///< flag if a new last corner cloud has been received
   bool _newLaserCloudSurfLast;    ///< flag if a new last surface cloud has been received

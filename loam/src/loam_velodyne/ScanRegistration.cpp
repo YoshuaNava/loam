@@ -229,7 +229,7 @@ void ScanRegistration::handleIMUMessage(const sensor_msgs::Imu::ConstPtr& imuIn)
   acc.z() = float(imuIn->linear_acceleration.x + sin(pitch) * 9.81);
 
   IMUState newState;
-  newState.stamp = imuIn->header.stamp;
+  newState.stamp = imuIn->header.stamp.toSec();
   newState.roll = roll;
   newState.pitch = pitch;
   newState.yaw = yaw;
@@ -240,7 +240,7 @@ void ScanRegistration::handleIMUMessage(const sensor_msgs::Imu::ConstPtr& imuIn)
     rotateZXY(acc, newState.roll, newState.pitch, newState.yaw);
 
     const IMUState& prevState = _imuHistory.last();
-    float timeDiff = float((newState.stamp - prevState.stamp).toSec());
+    float timeDiff = float(newState.stamp - prevState.stamp);
     newState.position = prevState.position
                         + (prevState.velocity * timeDiff)
                         + (0.5 * acc * timeDiff * timeDiff);
@@ -256,7 +256,7 @@ void ScanRegistration::handleIMUMessage(const sensor_msgs::Imu::ConstPtr& imuIn)
 void ScanRegistration::reset(const ros::Time& scanTime,
                              const bool& newSweep)
 {
-  _scanTime = scanTime;
+  _scanTime = scanTime.toSec();
 
   // re-initialize IMU start index and state
   _imuIdx = 0;
@@ -266,7 +266,7 @@ void ScanRegistration::reset(const ros::Time& scanTime,
 
   // clear internal cloud buffers at the beginning of a sweep
   if (newSweep) {
-    _sweepStart = scanTime;
+    _sweepStart = scanTime.toSec();
 
     // clear cloud buffers
     _laserCloud.clear();
@@ -286,7 +286,7 @@ void ScanRegistration::setIMUTransformFor(const float& relTime)
 {
   interpolateIMUStateFor(relTime, _imuCur);
 
-  float relSweepTime = (_scanTime - _sweepStart).toSec() + relTime;
+  float relSweepTime = (_scanTime - _sweepStart) + relTime;
   _imuPositionShift = _imuCur.position - _imuStart.position - _imuStart.velocity * relSweepTime;
 }
 
@@ -311,16 +311,16 @@ void ScanRegistration::transformToStartIMU(pcl::PointXYZI& point)
 void ScanRegistration::interpolateIMUStateFor(const float &relTime,
                                               IMUState &outputState)
 {
-  double timeDiff = (_scanTime - _imuHistory[_imuIdx].stamp).toSec() + relTime;
+  double timeDiff = (_scanTime - _imuHistory[_imuIdx].stamp) + relTime;
   while (_imuIdx < _imuHistory.size() - 1 && timeDiff > 0) {
     _imuIdx++;
-    timeDiff = (_scanTime - _imuHistory[_imuIdx].stamp).toSec() + relTime;
+    timeDiff = (_scanTime - _imuHistory[_imuIdx].stamp) + relTime;
   }
 
   if (_imuIdx == 0 || timeDiff > 0) {
     outputState = _imuHistory[_imuIdx];
   } else {
-    float ratio = -timeDiff / (_imuHistory[_imuIdx].stamp - _imuHistory[_imuIdx - 1].stamp).toSec();
+    float ratio = -timeDiff / (_imuHistory[_imuIdx].stamp - _imuHistory[_imuIdx - 1].stamp);
     IMUState::interpolate(_imuHistory[_imuIdx], _imuHistory[_imuIdx - 1], ratio, outputState);
   }
 }
@@ -537,11 +537,11 @@ void ScanRegistration::markAsPicked(const size_t& cloudIdx,
 void ScanRegistration::publishResult()
 {
   // publish full resolution and feature point clouds
-  publishCloudMsg(_pubLaserCloud,            _laserCloud,            _sweepStart, "/camera");
-  publishCloudMsg(_pubCornerPointsSharp,     _cornerPointsSharp,     _sweepStart, "/camera");
-  publishCloudMsg(_pubCornerPointsLessSharp, _cornerPointsLessSharp, _sweepStart, "/camera");
-  publishCloudMsg(_pubSurfPointsFlat,        _surfacePointsFlat,     _sweepStart, "/camera");
-  publishCloudMsg(_pubSurfPointsLessFlat,    _surfacePointsLessFlat, _sweepStart, "/camera");
+  publishCloudMsg(_pubLaserCloud,            _laserCloud,            ros::Time(_sweepStart), "/camera");
+  publishCloudMsg(_pubCornerPointsSharp,     _cornerPointsSharp,     ros::Time(_sweepStart), "/camera");
+  publishCloudMsg(_pubCornerPointsLessSharp, _cornerPointsLessSharp, ros::Time(_sweepStart), "/camera");
+  publishCloudMsg(_pubSurfPointsFlat,        _surfacePointsFlat,     ros::Time(_sweepStart), "/camera");
+  publishCloudMsg(_pubSurfPointsLessFlat,    _surfacePointsLessFlat, ros::Time(_sweepStart), "/camera");
 
 
   // publish corresponding IMU transformation information
@@ -567,7 +567,7 @@ void ScanRegistration::publishResult()
   _imuTrans[3].y = imuVelocityFromStart.y();
   _imuTrans[3].z = imuVelocityFromStart.z();
 
-  publishCloudMsg(_pubImuTrans, _imuTrans, _sweepStart, "/camera");
+  publishCloudMsg(_pubImuTrans, _imuTrans, ros::Time(_sweepStart), "/camera");
 }
 
 } // end namespace loam

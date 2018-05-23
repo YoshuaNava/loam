@@ -287,18 +287,18 @@ void LaserMapping::transformUpdate()
   if (_imuHistory.size() > 0) {
     size_t imuIdx = 0;
 
-    while (imuIdx < _imuHistory.size() - 1 && (_timeLaserOdometry - _imuHistory[imuIdx].stamp).toSec() + _scanPeriod > 0) {
+    while (imuIdx < _imuHistory.size() - 1 && (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _scanPeriod > 0) {
       imuIdx++;
     }
 
     IMUState2 imuCur;
 
-    if (imuIdx == 0 || (_timeLaserOdometry - _imuHistory[imuIdx].stamp).toSec() + _scanPeriod > 0) {
+    if (imuIdx == 0 || (_timeLaserOdometry - _imuHistory[imuIdx].stamp) + _scanPeriod > 0) {
       // scan time newer then newest or older than oldest IMU message
       imuCur = _imuHistory[imuIdx];
     } else {
-      float ratio = ((_imuHistory[imuIdx].stamp - _timeLaserOdometry).toSec() - _scanPeriod)
-                        / (_imuHistory[imuIdx].stamp - _imuHistory[imuIdx - 1].stamp).toSec();
+      float ratio = ((_imuHistory[imuIdx].stamp - _timeLaserOdometry) - _scanPeriod)
+                        / (_imuHistory[imuIdx].stamp - _imuHistory[imuIdx - 1].stamp);
 
       IMUState2::interpolate(_imuHistory[imuIdx], _imuHistory[imuIdx - 1], ratio, imuCur);
     }
@@ -343,7 +343,7 @@ void LaserMapping::pointAssociateTobeMapped(const pcl::PointXYZI& pi, pcl::Point
 
 void LaserMapping::laserCloudCornerLastHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsLastMsg)
 {
-  _timeLaserCloudCornerLast = cornerPointsLastMsg->header.stamp;
+  _timeLaserCloudCornerLast = cornerPointsLastMsg->header.stamp.toSec();
 
   _laserCloudCornerLast->clear();
   pcl::fromROSMsg(*cornerPointsLastMsg, *_laserCloudCornerLast);
@@ -355,7 +355,7 @@ void LaserMapping::laserCloudCornerLastHandler(const sensor_msgs::PointCloud2Con
 
 void LaserMapping::laserCloudSurfLastHandler(const sensor_msgs::PointCloud2ConstPtr& surfacePointsLastMsg)
 {
-  _timeLaserCloudSurfLast = surfacePointsLastMsg->header.stamp;
+  _timeLaserCloudSurfLast = surfacePointsLastMsg->header.stamp.toSec();
 
   _laserCloudSurfLast->clear();
   pcl::fromROSMsg(*surfacePointsLastMsg, *_laserCloudSurfLast);
@@ -367,7 +367,7 @@ void LaserMapping::laserCloudSurfLastHandler(const sensor_msgs::PointCloud2Const
 
 void LaserMapping::laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudFullResMsg)
 {
-  _timeLaserCloudFullRes = laserCloudFullResMsg->header.stamp;
+  _timeLaserCloudFullRes = laserCloudFullResMsg->header.stamp.toSec();
 
   _laserCloudFullRes->clear();
   pcl::fromROSMsg(*laserCloudFullResMsg, *_laserCloudFullRes);
@@ -379,7 +379,7 @@ void LaserMapping::laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstP
 
 void LaserMapping::laserOdometryHandler(const nav_msgs::Odometry::ConstPtr& laserOdometry)
 {
-  _timeLaserOdometry = laserOdometry->header.stamp;
+  _timeLaserOdometry = laserOdometry->header.stamp.toSec();
 
   double roll, pitch, yaw;
   geometry_msgs::Quaternion geoQuat = laserOdometry->pose.pose.orientation;
@@ -407,7 +407,7 @@ void LaserMapping::imuHandler(const sensor_msgs::Imu::ConstPtr& imuIn)
 
   IMUState2 newState;
 
-  newState.stamp = imuIn->header.stamp;
+  newState.stamp = imuIn->header.stamp.toSec();
   newState.roll = roll;
   newState.pitch = pitch;
 
@@ -447,9 +447,9 @@ bool LaserMapping::hasNewData()
 {
   return _newLaserCloudCornerLast && _newLaserCloudSurfLast &&
          _newLaserCloudFullRes && _newLaserOdometry &&
-         fabs((_timeLaserCloudCornerLast - _timeLaserOdometry).toSec()) < 0.005 &&
-         fabs((_timeLaserCloudSurfLast - _timeLaserOdometry).toSec()) < 0.005 &&
-         fabs((_timeLaserCloudFullRes - _timeLaserOdometry).toSec()) < 0.005;
+         fabs(_timeLaserCloudCornerLast - _timeLaserOdometry) < 0.005 &&
+         fabs(_timeLaserCloudSurfLast - _timeLaserOdometry) < 0.005 &&
+         fabs(_timeLaserCloudFullRes - _timeLaserOdometry) < 0.005;
 }
 
 
@@ -1080,7 +1080,7 @@ void LaserMapping::publishResult()
       _downSizeFilterCorner.filter(*_laserCloudSurroundDS);
 
       // publish new map cloud
-      publishCloudMsg(_pubLaserCloudSurround, *_laserCloudSurroundDS, _timeLaserOdometry, "/camera_init");
+      publishCloudMsg(_pubLaserCloudSurround, *_laserCloudSurroundDS, ros::Time(_timeLaserOdometry), "/camera_init");
     }
   }
 
@@ -1092,7 +1092,7 @@ void LaserMapping::publishResult()
   }
 
   // publish transformed full resolution input cloud
-  publishCloudMsg(_pubLaserCloudFullRes, *_laserCloudFullRes, _timeLaserOdometry, "/camera_init");
+  publishCloudMsg(_pubLaserCloudFullRes, *_laserCloudFullRes, ros::Time(_timeLaserOdometry), "/camera_init");
 
 
   // publish odometry after mapped transformations
@@ -1101,7 +1101,7 @@ void LaserMapping::publishResult()
         -_transformAftMapped.rot_x.rad(),
         -_transformAftMapped.rot_y.rad());
 
-  _odomAftMapped.header.stamp = _timeLaserOdometry;
+  _odomAftMapped.header.stamp = ros::Time(_timeLaserOdometry);
   _odomAftMapped.pose.pose.orientation.x = -geoQuat.y;
   _odomAftMapped.pose.pose.orientation.y = -geoQuat.z;
   _odomAftMapped.pose.pose.orientation.z = geoQuat.x;
@@ -1117,7 +1117,7 @@ void LaserMapping::publishResult()
   _odomAftMapped.twist.twist.linear.z = _transformBefMapped.pos.z();
   _pubOdomAftMapped.publish(_odomAftMapped);
 
-  _aftMappedTrans.stamp_ = _timeLaserOdometry;
+  _aftMappedTrans.stamp_ = ros::Time(_timeLaserOdometry);
   _aftMappedTrans.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
   _aftMappedTrans.setOrigin(tf::Vector3(_transformAftMapped.pos.x(),
                                         _transformAftMapped.pos.y(),
