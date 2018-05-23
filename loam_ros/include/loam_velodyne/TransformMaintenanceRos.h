@@ -72,10 +72,16 @@ public:
   void odomAftMappedCallback(const nav_msgs::Odometry::ConstPtr& odomAftMapped);
 
   // TODO doc
+  void publishAndLogResults(const float* transform, const ros::Time stamp = ros::Time::now());
+
+  // TODO doc
   void publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp);
 
 private:
   TransformMaintenance _transformMaintainer;
+  bool _logResults;
+  std::string _logFilename;
+  bool _publishPath;
 
   nav_msgs::Odometry _laserOdometry2;         ///< latest integrated laser odometry message
   nav_msgs::Path _pathMsg;

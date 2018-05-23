@@ -57,10 +57,16 @@ TransformMaintenanceRos::TransformMaintenanceRos()
 
 bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &privateNode)
 {
+  // load parameters
+  _logResults = node.param<bool>("/loam/log_results", false);
+  _logFilename = node.param<std::string>("/loam/log_filename", std::string("~/results.txt"));
+  _publishPath = node.param<bool>("/loam/publish_path", false);
+  
   // advertise integrated laser odometry topic
   _pubLaserOdometry2 = node.advertise<nav_msgs::Odometry> ("/integrated_to_init", 5);
 
-  _pubOdomToPath = node.advertise<nav_msgs::Path> ("/odom_to_path", 2);
+  if(_publishPath)
+    _pubOdomToPath = node.advertise<nav_msgs::Path> ("/odom_to_path", 2);
 
   // subscribe to laser odometry and mapping odometry topics
   _subLaserOdometry = node.subscribe<nav_msgs::Odometry>
@@ -72,35 +78,15 @@ bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &priv
   return true;
 }
 
-
 void TransformMaintenanceRos::laserOdometryCallback(const nav_msgs::Odometry::ConstPtr& laserOdometry)
 {
   Eigen::Vector3d pos(laserOdometry->pose.pose.position.x, laserOdometry->pose.pose.position.y,  laserOdometry->pose.pose.position.z);
   Eigen::Quaterniond rot(laserOdometry->pose.pose.orientation.w, laserOdometry->pose.pose.orientation.z, -laserOdometry->pose.pose.orientation.x, -laserOdometry->pose.pose.orientation.y);
 
   _transformMaintainer.processOdometryTransform(pos, rot);
-
   float* integratedTransform = _transformMaintainer.getIntegratedTransform();
 
-  geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw
-      (integratedTransform[2], -integratedTransform[0], -integratedTransform[1]);
-
-  _laserOdometry2.header.stamp = laserOdometry->header.stamp;
-  _laserOdometry2.pose.pose.orientation.x = -geoQuat.y;
-  _laserOdometry2.pose.pose.orientation.y = -geoQuat.z;
-  _laserOdometry2.pose.pose.orientation.z = geoQuat.x;
-  _laserOdometry2.pose.pose.orientation.w = geoQuat.w;
-  _laserOdometry2.pose.pose.position.x = integratedTransform[3];
-  _laserOdometry2.pose.pose.position.y = integratedTransform[4];
-  _laserOdometry2.pose.pose.position.z = integratedTransform[5];
-  _pubLaserOdometry2.publish(_laserOdometry2);
-
-  _laserOdometryTrans2.stamp_ = laserOdometry->header.stamp;
-  _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
-  _laserOdometryTrans2.setOrigin(tf::Vector3(integratedTransform[3], integratedTransform[4], integratedTransform[5]));
-  _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
-
-  // publishPath(T.linear(), T.translation(), laserOdometry->header.stamp);
+  publishAndLogResults(integratedTransform, laserOdometry->header.stamp);
 }
 
 void TransformMaintenanceRos::odomAftMappedCallback(const nav_msgs::Odometry::ConstPtr& odomAftMapped)
@@ -112,6 +98,43 @@ void TransformMaintenanceRos::odomAftMappedCallback(const nav_msgs::Odometry::Co
 
   _transformMaintainer.processMappingTransform(pos, rot, linear_vel, angular_vel);
 }
+
+void TransformMaintenanceRos::publishAndLogResults(const float* transform, const ros::Time stamp)
+{
+  geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw
+      (transform[2], -transform[0], -transform[1]);
+
+  _laserOdometry2.header.stamp = stamp;
+  _laserOdometry2.pose.pose.orientation.x = -geoQuat.y;
+  _laserOdometry2.pose.pose.orientation.y = -geoQuat.z;
+  _laserOdometry2.pose.pose.orientation.z = geoQuat.x;
+  _laserOdometry2.pose.pose.orientation.w = geoQuat.w;
+  _laserOdometry2.pose.pose.position.x = transform[3];
+  _laserOdometry2.pose.pose.position.y = transform[4];
+  _laserOdometry2.pose.pose.position.z = transform[5];
+  _pubLaserOdometry2.publish(_laserOdometry2);
+
+  _laserOdometryTrans2.stamp_ = stamp;
+  _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
+  _laserOdometryTrans2.setOrigin(tf::Vector3(transform[3], transform[4], transform[5]));
+  _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
+
+  Eigen::Quaterniond quat = Eigen::AngleAxisd(transform[2], Eigen::Vector3d::UnitX())
+                            * Eigen::AngleAxisd(-transform[0], Eigen::Vector3d::UnitY())
+                            * Eigen::AngleAxisd(-transform[1], Eigen::Vector3d::UnitZ());
+  Eigen::Quaterniond quat_kitti(quat.w(), -quat.y(), -quat.z(), quat.x());
+  Eigen::Isometry3d T;
+  T.linear() = quat_kitti.toRotationMatrix();
+  T.translation() = Eigen::Vector3d(transform[3], transform[4], transform[5]);
+  T = rot_kitti.toRotationMatrix() * T;
+
+  if(_logResults)
+    savePoseToFile(T.linear(), T.translation(), _logFilename);
+
+  if(_publishPath)
+    publishPath(T.linear(), T.translation(), stamp);
+}
+
 
 void TransformMaintenanceRos::publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp) {
   Eigen::Quaterniond q(rot);

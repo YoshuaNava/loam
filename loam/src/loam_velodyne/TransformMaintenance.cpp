@@ -168,23 +168,6 @@ void TransformMaintenance::processOdometryTransform(const Eigen::Vector3d& pos, 
   _transformSum[5] = pos(2);
 
   transformAssociateToMap();
-
-  Eigen::Quaterniond quat = Eigen::AngleAxisd(_transformMapped[2], Eigen::Vector3d::UnitX())
-                            * Eigen::AngleAxisd(-_transformMapped[0], Eigen::Vector3d::UnitY())
-                            * Eigen::AngleAxisd(-_transformMapped[1], Eigen::Vector3d::UnitZ());
-
-  // setup values to return
-
-  Eigen::Quaterniond quat_kitti(quat.w(), -quat.y(), -quat.z(), quat.x());
-  Eigen::Isometry3d T;
-  T.linear() = quat_kitti.toRotationMatrix();
-  T.translation() = Eigen::Vector3d(_transformMapped[3], _transformMapped[4], _transformMapped[5]);
-  T = rot_kitti.toRotationMatrix() * T;
-
-  // publishPath(T.linear(), T.translation(), laserOdometry->header.stamp);
-  savePoseToFile(T.linear(), T.translation(), "/home/alfredoso/Datasets/KITTI/benchmark/result_05_loam.txt");
-
-  // Return current transform
 }
 
 

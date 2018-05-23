@@ -34,10 +34,6 @@
 #define LOAM_TRANSFORMMAINTENANCE_H
 
 #include <Eigen/Dense>
-#include <ros/node_handle.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <tf/transform_broadcaster.h>
 
 #include "loam_utils/common.h"
 
