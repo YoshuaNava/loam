@@ -32,8 +32,6 @@
 
 #include "loam_velodyne/TransformMaintenance.h"
 
-#include <fstream>
-
 
 namespace loam {
 
@@ -52,6 +50,11 @@ TransformMaintenance::TransformMaintenance()
     _transformBefMapped[i] = 0;
     _transformAftMapped[i] = 0;
   }
+}
+
+float* TransformMaintenance::getIntegratedTransform()
+{
+  return _transformMapped;
 }
 
 void TransformMaintenance::transformAssociateToMap()
@@ -153,57 +156,56 @@ void TransformMaintenance::transformAssociateToMap()
 
 
 
-void TransformMaintenance::processOdometryTransform(const float transformOdometry[6])
+void TransformMaintenance::processOdometryTransform(const Eigen::Vector3d& pos, const Eigen::Quaterniond& rot)
 {
-  std::copy(transformOdometry, transformOdometry+5, _transformSum);
+  Eigen::Vector3d rpy = rot.toRotationMatrix().eulerAngles(0, 1, 2);
+  _transformSum[0] = -rpy(1);
+  _transformSum[1] = -rpy(2);
+  _transformSum[2] = rpy(0);
+
+  _transformSum[3] = pos(0);
+  _transformSum[4] = pos(1);
+  _transformSum[5] = pos(2);
 
   transformAssociateToMap();
 
-  Eigen::Quaterniond quat = AngleAxisf(_transformMapped[2], Vector3f::UnitX())
-                            * AngleAxisf(-_transformMapped[0], Vector3f::UnitY())
-                            * AngleAxisf(-_transformMapped[1], Vector3f::UnitZ());;
+  Eigen::Quaterniond quat = Eigen::AngleAxisd(_transformMapped[2], Eigen::Vector3d::UnitX())
+                            * Eigen::AngleAxisd(-_transformMapped[0], Eigen::Vector3d::UnitY())
+                            * Eigen::AngleAxisd(-_transformMapped[1], Eigen::Vector3d::UnitZ());
 
-  // _laserOdometry2.header.stamp = laserOdometry->header.stamp;
-  // _laserOdometry2.pose.pose.orientation.x = -geoQuat.y;
-  // _laserOdometry2.pose.pose.orientation.y = -geoQuat.z;
-  // _laserOdometry2.pose.pose.orientation.z = geoQuat.x;
-  // _laserOdometry2.pose.pose.orientation.w = geoQuat.w;
-  // _laserOdometry2.pose.pose.position.x = _transformMapped[3];
-  // _laserOdometry2.pose.pose.position.y = _transformMapped[4];
-  // _laserOdometry2.pose.pose.position.z = _transformMapped[5];
-  // _pubLaserOdometry2.publish(_laserOdometry2);
+  // setup values to return
 
-  // _laserOdometryTrans2.stamp_ = laserOdometry->header.stamp;
-  // _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
-  // _laserOdometryTrans2.setOrigin(tf::Vector3(_transformMapped[3], _transformMapped[4], _transformMapped[5]));
-  // _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
-
-  Eigen::Quaterniond quat_kitti(quat.w, quat.z, -quat.x, -quat.y);
+  Eigen::Quaterniond quat_kitti(quat.w(), -quat.y(), -quat.z(), quat.x());
   Eigen::Isometry3d T;
-  T.linear() = quat.toRotationMatrix();
+  T.linear() = quat_kitti.toRotationMatrix();
   T.translation() = Eigen::Vector3d(_transformMapped[3], _transformMapped[4], _transformMapped[5]);
   T = rot_kitti.toRotationMatrix() * T;
 
   // publishPath(T.linear(), T.translation(), laserOdometry->header.stamp);
-  savePoseToFile(T.linear(), T.translation());
+  savePoseToFile(T.linear(), T.translation(), "/home/alfredoso/Datasets/KITTI/benchmark/result_05_loam.txt");
 
   // Return current transform
 }
 
 
-void TransformMaintenance::savePoseToFile(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans) {
-  const std::string filename = "/home/alfredoso/Datasets/KITTI/benchmark/result_05_loam.txt";
-  std::ofstream myfile;
-  myfile.open (filename, std::ios_base::app);
-  myfile << rot(0,0) << " " << rot(0,1) << " " << rot(0,2) << " " << trans(0) << " "
-         << rot(1,0) << " " << rot(1,1) << " " << rot(1,2) << " " << trans(1) << " "
-         << rot(2,0) << " " << rot(2,1) << " " << rot(2,2) << " " << trans(2) << "\n";
-  myfile.close();
-}
-
-void TransformMaintenance::processMappingTransform(const float transformAftMapped[6])
+void TransformMaintenance::processMappingTransform(const Eigen::Vector3d& pos, const Eigen::Quaterniond& rot, const Eigen::Vector3d& linear_vel, const Eigen::Vector3d& angular_vel)
 {
-  std::copy(transformAftMapped, transformAftMapped+5, _transformAftMapped);
+  Eigen::Vector3d rpy = rot.toRotationMatrix().eulerAngles(0, 1, 2);
+  _transformAftMapped[0] = -rpy(1);
+  _transformAftMapped[1] = -rpy(2);
+  _transformAftMapped[2] = rpy(0);
+
+  _transformAftMapped[3] = pos(0);
+  _transformAftMapped[4] = pos(1);
+  _transformAftMapped[5] = pos(2);
+
+  _transformBefMapped[0] = angular_vel(0);
+  _transformBefMapped[1] = angular_vel(1);
+  _transformBefMapped[2] = angular_vel(2);
+
+  _transformBefMapped[3] = linear_vel(0);
+  _transformBefMapped[4] = linear_vel(1);
+  _transformBefMapped[5] = linear_vel(2);
 }
 
 } // end namespace loam

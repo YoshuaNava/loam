@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include "loam_velodyne/TransformMaintenance.h"
+#include "loam_velodyne/TransformMaintenanceRos.h"
 
 
 /** Main node entry point. */
@@ -9,9 +9,9 @@ int main(int argc, char **argv)
   ros::NodeHandle node;
   ros::NodeHandle privateNode("~");
 
-  loam::TransformMaintenance transMaintenance;
+  loam::TransformMaintenanceRos transMaintenanceRos;
 
-  if (transMaintenance.setup(node, privateNode)) {
+  if (transMaintenanceRos.setup(node, privateNode)) {
     // initialization successful
     ros::spin();
   }

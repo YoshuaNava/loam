@@ -75,49 +75,43 @@ bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &priv
 
 void TransformMaintenanceRos::laserOdometryCallback(const nav_msgs::Odometry::ConstPtr& laserOdometry)
 {
-  double[3] rpy;
-  geometry_msgs::Quaternion geoQuat = laserOdometry->pose.pose.orientation;
-  tf::Matrix3x3(tf::Quaternion(geoQuat.z, -geoQuat.x, -geoQuat.y, geoQuat.w)).getRPY(roll, pitch, yaw);
+  Eigen::Vector3d pos(laserOdometry->pose.pose.position.x, laserOdometry->pose.pose.position.y,  laserOdometry->pose.pose.position.z);
+  Eigen::Quaterniond rot(laserOdometry->pose.pose.orientation.w, laserOdometry->pose.pose.orientation.z, -laserOdometry->pose.pose.orientation.x, -laserOdometry->pose.pose.orientation.y);
 
-  _transformSum[0] = -pitch;
-  _transformSum[1] = -yaw;
-  _transformSum[2] = roll;
+  _transformMaintainer.processOdometryTransform(pos, rot);
 
-  _transformSum[3] = laserOdometry->pose.pose.position.x;
-  _transformSum[4] = laserOdometry->pose.pose.position.y;
-  _transformSum[5] = laserOdometry->pose.pose.position.z;
+  float* integratedTransform = _transformMaintainer.getIntegratedTransform();
 
-  // transformAssociateToMap();
-
-  geoQuat = tf::createQuaternionMsgFromRollPitchYaw
-      (_transformMapped[2], -_transformMapped[0], -_transformMapped[1]);
+  geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw
+      (integratedTransform[2], -integratedTransform[0], -integratedTransform[1]);
 
   _laserOdometry2.header.stamp = laserOdometry->header.stamp;
   _laserOdometry2.pose.pose.orientation.x = -geoQuat.y;
   _laserOdometry2.pose.pose.orientation.y = -geoQuat.z;
   _laserOdometry2.pose.pose.orientation.z = geoQuat.x;
   _laserOdometry2.pose.pose.orientation.w = geoQuat.w;
-  _laserOdometry2.pose.pose.position.x = _transformMapped[3];
-  _laserOdometry2.pose.pose.position.y = _transformMapped[4];
-  _laserOdometry2.pose.pose.position.z = _transformMapped[5];
+  _laserOdometry2.pose.pose.position.x = integratedTransform[3];
+  _laserOdometry2.pose.pose.position.y = integratedTransform[4];
+  _laserOdometry2.pose.pose.position.z = integratedTransform[5];
   _pubLaserOdometry2.publish(_laserOdometry2);
 
   _laserOdometryTrans2.stamp_ = laserOdometry->header.stamp;
   _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
-  _laserOdometryTrans2.setOrigin(tf::Vector3(_transformMapped[3], _transformMapped[4], _transformMapped[5]));
+  _laserOdometryTrans2.setOrigin(tf::Vector3(integratedTransform[3], integratedTransform[4], integratedTransform[5]));
   _tfBroadcaster2.sendTransform(_laserOdometryTrans2);
 
-
-  Eigen::Quaterniond quat(geoQuat.w, geoQuat.z, -geoQuat.x, -geoQuat.y);
-  Eigen::Isometry3d T;
-  T.linear() = quat.toRotationMatrix();
-  T.translation() = Eigen::Vector3d(_transformMapped[3], _transformMapped[4], _transformMapped[5]);
-  T = rot_kitti.toRotationMatrix() * T;
-
-  publishPath(T.linear(), T.translation(), laserOdometry->header.stamp);
-  savePoseToFile(T.linear(), T.translation());
+  // publishPath(T.linear(), T.translation(), laserOdometry->header.stamp);
 }
 
+void TransformMaintenanceRos::odomAftMappedCallback(const nav_msgs::Odometry::ConstPtr& odomAftMapped)
+{ 
+  Eigen::Vector3d pos(odomAftMapped->pose.pose.position.x, odomAftMapped->pose.pose.position.y,  odomAftMapped->pose.pose.position.z);
+  Eigen::Quaterniond rot(odomAftMapped->pose.pose.orientation.w, odomAftMapped->pose.pose.orientation.z, -odomAftMapped->pose.pose.orientation.x, -odomAftMapped->pose.pose.orientation.y);
+  Eigen::Vector3d angular_vel(odomAftMapped->twist.twist.angular.x, odomAftMapped->twist.twist.angular.y,  odomAftMapped->twist.twist.angular.z);
+  Eigen::Vector3d linear_vel(odomAftMapped->twist.twist.linear.x, odomAftMapped->twist.twist.linear.y,  odomAftMapped->twist.twist.linear.z);
+
+  _transformMaintainer.processMappingTransform(pos, rot, linear_vel, angular_vel);
+}
 
 void TransformMaintenanceRos::publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp) {
   Eigen::Quaterniond q(rot);
@@ -136,30 +130,6 @@ void TransformMaintenanceRos::publishPath(const Eigen::Matrix3d& rot, const Eige
   _pathMsg.header.stamp = ros::Time::now();
 
   _pubOdomToPath.publish(_pathMsg);
-}
-
-
-void TransformMaintenanceRos::odomAftMappedCallback(const nav_msgs::Odometry::ConstPtr& odomAftMapped)
-{
-  double roll, pitch, yaw;
-  geometry_msgs::Quaternion geoQuat = odomAftMapped->pose.pose.orientation;
-  tf::Matrix3x3(tf::Quaternion(geoQuat.z, -geoQuat.x, -geoQuat.y, geoQuat.w)).getRPY(roll, pitch, yaw);
-
-  _transformAftMapped[0] = -pitch;
-  _transformAftMapped[1] = -yaw;
-  _transformAftMapped[2] = roll;
-
-  _transformAftMapped[3] = odomAftMapped->pose.pose.position.x;
-  _transformAftMapped[4] = odomAftMapped->pose.pose.position.y;
-  _transformAftMapped[5] = odomAftMapped->pose.pose.position.z;
-
-  _transformBefMapped[0] = odomAftMapped->twist.twist.angular.x;
-  _transformBefMapped[1] = odomAftMapped->twist.twist.angular.y;
-  _transformBefMapped[2] = odomAftMapped->twist.twist.angular.z;
-
-  _transformBefMapped[3] = odomAftMapped->twist.twist.linear.x;
-  _transformBefMapped[4] = odomAftMapped->twist.twist.linear.y;
-  _transformBefMapped[5] = odomAftMapped->twist.twist.linear.z;
 }
 
 } // end namespace loam

@@ -33,6 +33,8 @@
 #ifndef LOAM_COMMON_H
 #define LOAM_COMMON_H
 
+#include <fstream>
+
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -64,6 +66,16 @@ inline void publishCloudMsg(ros::Publisher& publisher,
   msg.header.stamp = stamp;
   msg.header.frame_id = frameID;
   publisher.publish(msg);
+}
+
+inline void savePoseToFile(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const std::string& filename)
+{
+  std::ofstream myfile;
+  myfile.open (filename, std::ios_base::app);
+  myfile << rot(0,0) << " " << rot(0,1) << " " << rot(0,2) << " " << trans(0) << " "
+         << rot(1,0) << " " << rot(1,1) << " " << rot(1,2) << " " << trans(1) << " "
+         << rot(2,0) << " " << rot(2,1) << " " << rot(2,2) << " " << trans(2) << "\n";
+  myfile.close();
 }
 
 } // end namespace loam
