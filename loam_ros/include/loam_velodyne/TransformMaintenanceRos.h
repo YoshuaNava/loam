@@ -58,36 +58,22 @@ public:
   virtual bool setup(ros::NodeHandle& node,
                      ros::NodeHandle& privateNode);
 
-  /** \brief Handler method for laser odometry messages.
+  /** \brief Callback method for laser odometry messages.
    *
    * @param laserOdometry the new laser odometry
    */
-  void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr& laserOdometry);
+  void laserOdometryCallback(const nav_msgs::Odometry::ConstPtr& laserOdometry);
 
-  /** \brief Handler method for mapping odometry messages.
+  /** \brief Callback method for mapping odometry messages.
    *
    * @param odomAftMapped the new mapping odometry
    */
-  void odomAftMappedHandler(const nav_msgs::Odometry::ConstPtr& odomAftMapped);
-
-  // TODO doc
-  void savePoseToFile(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans);
+  void odomAftMappedCallback(const nav_msgs::Odometry::ConstPtr& odomAftMapped);
 
   // TODO doc
   void publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp);
 
-
-protected:
-  void transformAssociateToMap();
-
-
 private:
-  float _transformSum[6];
-  float _transformIncre[6];
-  float _transformMapped[6];
-  float _transformBefMapped[6];
-  float _transformAftMapped[6];
-
   nav_msgs::Odometry _laserOdometry2;         ///< latest integrated laser odometry message
   nav_msgs::Path _pathMsg;
   tf::StampedTransform _laserOdometryTrans2;  ///< latest integrated laser odometry transformation
