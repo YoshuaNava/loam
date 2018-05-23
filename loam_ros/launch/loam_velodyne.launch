@@ -3,6 +3,7 @@
 
   <arg name="rviz" default="true" />
   <arg name="scanPeriod" default="0.1" />
+  <rosparam command="load" file="$(find loam_ros)/config/loam_velodyne.yaml"/>
 
   <node pkg="loam_ros" type="multiScanRegistration" name="multiScanRegistration" output="screen">
     
