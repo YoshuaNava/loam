@@ -75,13 +75,6 @@ LaserMapping::LaserMapping(const LaserMappingParams params)
         _laserCloudCornerFromMap(new pcl::PointCloud<pcl::PointXYZI>()),
         _laserCloudSurfFromMap(new pcl::PointCloud<pcl::PointXYZI>())
 {
-  // initialize mapping odometry and odometry tf messages
-  _odomAftMapped.header.frame_id = "/camera_init";
-  _odomAftMapped.child_frame_id = "/aft_mapped";
-
-  _aftMappedTrans.frame_id_ = "/camera_init";
-  _aftMappedTrans.child_frame_id_ = "/aft_mapped";
-
   // initialize frame counter
   _frameCount = _params.stackFrameNum - 1;
   _mapFrameCount = _params.mapFrameNum - 1;
@@ -104,117 +97,6 @@ LaserMapping::LaserMapping(const LaserMappingParams params)
   _downSizeFilterSurf.setLeafSize(_params.surfFilterSize, _params.surfFilterSize, _params.surfFilterSize);
   _downSizeFilterMap.setLeafSize(_params.mapFilterSize, _params.mapFilterSize, _params.mapFilterSize);
 }
-
-
-
-bool LaserMapping::setup(ros::NodeHandle& node,
-                         ros::NodeHandle& privateNode)
-{
-  const char* module_name = "LaserMapping:";
-  // fetch laser mapping params
-  float fParam;
-  int iParam;
-
-  if (privateNode.getParam("/loam/scan_period", fParam)) {
-    if (fParam <= 0) {
-      ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
-      return false;
-    } else {
-      _params.scanPeriod = fParam;
-      ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
-    }
-  }
-
-  if (privateNode.getParam("/loam/mapping/max_iterations", iParam)) {
-    if (iParam < 1) {
-      ROS_ERROR("%s: Invalid max_iterations parameter: %d (expected > 0)", module_name, iParam);
-      return false;
-    } else {
-      _params.maxIterations = iParam;
-      ROS_INFO("%s: Set max_iterations: %d", module_name, iParam);
-    }
-  }
-
-  if (privateNode.getParam("/loam/mapping/delta_T_abort", fParam)) {
-    if (fParam <= 0) {
-      ROS_ERROR("%s: Invalid delta_T_abort parameter: %f (expected > 0)", module_name, fParam);
-      return false;
-    } else {
-      _params.deltaTAbort = fParam;
-      ROS_INFO("%s: Set delta_T_abort: %g", module_name, fParam);
-    }
-  }
-
-  if (privateNode.getParam("/loam/mapping/delta_R_abort", fParam)) {
-    if (fParam <= 0) {
-      ROS_ERROR("%s: Invalid delta_R_abort parameter: %f (expected > 0)", module_name, fParam);
-      return false;
-    } else {
-      _params.deltaRAbort = fParam;
-      ROS_INFO("%s: Set delta_R_abort: %g", module_name, fParam);
-    }
-  }
-
-  if (privateNode.getParam("/loam/mapping/corner_filter_size", fParam)) {
-    if (fParam < 0.001) {
-      ROS_ERROR("%s: Invalid cornerFilterSize parameter: %f (expected >= 0.001)", module_name, fParam);
-      return false;
-    } else {
-      _params.cornerFilterSize = fParam;
-      _downSizeFilterCorner.setLeafSize(_params.cornerFilterSize, _params.cornerFilterSize, _params.cornerFilterSize);
-      ROS_INFO("%s: Set corner down size filter leaf size: %g", module_name, fParam);
-    }
-  }
-
-  if (privateNode.getParam("/loam/mapping/surface_filter_size", fParam)) {
-    if (fParam < 0.001) {
-      ROS_ERROR("%s: Invalid surface_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
-      return false;
-    } else {
-      _params.surfFilterSize = fParam;
-      _downSizeFilterSurf.setLeafSize(_params.surfFilterSize, _params.surfFilterSize, _params.surfFilterSize);
-      ROS_INFO("%s: Set surface down size filter leaf size: %g", module_name, fParam);
-    }
-  }
-
-  if (privateNode.getParam("/loam/mapping/map_filter_size", fParam)) {
-    if (fParam < 0.001) {
-      ROS_ERROR("%s: Invalid map_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
-      return false;
-    } else {
-      _params.mapFilterSize = fParam;
-      _downSizeFilterMap.setLeafSize(_params.mapFilterSize, _params.mapFilterSize, _params.mapFilterSize);
-      ROS_INFO("%s: Set map down size filter leaf size: %g", module_name, fParam);
-    }
-  }
-
-
-  // advertise laser mapping topics
-  _pubLaserCloudSurround = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_surround", 1);
-  _pubLaserCloudFullRes = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_registered", 2);
-  _pubOdomAftMapped = node.advertise<nav_msgs::Odometry> ("/aft_mapped_to_init", 5);
-
-
-  // subscribe to laser odometry topics
-  _subLaserCloudCornerLast = node.subscribe<sensor_msgs::PointCloud2>
-      ("/laser_cloud_corner_last", 2, &LaserMapping::laserCloudCornerLastHandler, this);
-
-  _subLaserCloudSurfLast = node.subscribe<sensor_msgs::PointCloud2>
-      ("/laser_cloud_surf_last", 2, &LaserMapping::laserCloudSurfLastHandler, this);
-
-  _subLaserOdometry = node.subscribe<nav_msgs::Odometry>
-      ("/laser_odom_to_init", 5, &LaserMapping::laserOdometryHandler, this);
-
-  _subLaserCloudFullRes = node.subscribe<sensor_msgs::PointCloud2>
-      ("/laser_cloud_odom", 2, &LaserMapping::laserCloudFullResHandler, this);
-
-  // subscribe to IMU topic
-  _subImu = node.subscribe<sensor_msgs::Imu> ("/imu/data", 50, &LaserMapping::imuHandler, this);
-
-  return true;
-}
-
-
 
 void LaserMapping::transformAssociateToMap()
 {
@@ -342,96 +224,20 @@ void LaserMapping::pointAssociateTobeMapped(const pcl::PointXYZI& pi, pcl::Point
 }
 
 
-
-void LaserMapping::laserCloudCornerLastHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsLastMsg)
-{
-  _timeLaserCloudCornerLast = cornerPointsLastMsg->header.stamp.toSec();
-
-  _laserCloudCornerLast->clear();
-  pcl::fromROSMsg(*cornerPointsLastMsg, *_laserCloudCornerLast);
-
-  _newLaserCloudCornerLast = true;
-}
-
-
-
-void LaserMapping::laserCloudSurfLastHandler(const sensor_msgs::PointCloud2ConstPtr& surfacePointsLastMsg)
-{
-  _timeLaserCloudSurfLast = surfacePointsLastMsg->header.stamp.toSec();
-
-  _laserCloudSurfLast->clear();
-  pcl::fromROSMsg(*surfacePointsLastMsg, *_laserCloudSurfLast);
-
-  _newLaserCloudSurfLast = true;
-}
-
-
-
-void LaserMapping::laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudFullResMsg)
-{
-  _timeLaserCloudFullRes = laserCloudFullResMsg->header.stamp.toSec();
-
-  _laserCloudFullRes->clear();
-  pcl::fromROSMsg(*laserCloudFullResMsg, *_laserCloudFullRes);
-
-  _newLaserCloudFullRes = true;
-}
-
-
-
-void LaserMapping::laserOdometryHandler(const nav_msgs::Odometry::ConstPtr& laserOdometry)
-{
-  _timeLaserOdometry = laserOdometry->header.stamp.toSec();
-
-  double roll, pitch, yaw;
-  geometry_msgs::Quaternion geoQuat = laserOdometry->pose.pose.orientation;
-  tf::Matrix3x3(tf::Quaternion(geoQuat.z, -geoQuat.x, -geoQuat.y, geoQuat.w)).getRPY(roll, pitch, yaw);
-
-  _transformSum.rot_x = -pitch;
-  _transformSum.rot_y = -yaw;
-  _transformSum.rot_z = roll;
-
-  _transformSum.pos.x() = float(laserOdometry->pose.pose.position.x);
-  _transformSum.pos.y() = float(laserOdometry->pose.pose.position.y);
-  _transformSum.pos.z() = float(laserOdometry->pose.pose.position.z);
-
-  _newLaserOdometry = true;
-}
-
-
-
-void LaserMapping::imuHandler(const sensor_msgs::Imu::ConstPtr& imuIn)
-{
-  double roll, pitch, yaw;
-  tf::Quaternion orientation;
-  tf::quaternionMsgToTF(imuIn->orientation, orientation);
-  tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
-
-  IMUState newState;
-
-  newState.stamp = imuIn->header.stamp.toSec();
-  newState.roll = roll;
-  newState.pitch = pitch;
-
-  _imuHistory.push(newState);
-}
-
-
-
 void LaserMapping::spin()
 {
-  ros::Rate rate(100);
-  bool status = ros::ok();
+  // ros::Rate rate(100);
+  // bool status = ros::ok();
 
-  while (status) {
-    ros::spinOnce();
+  // while (status) {
+  //   ros::spinOnce();
 
-    // try processing buffered data
-    process();
+  //   // try processing buffered data
+  //   process();
 
-    status = ros::ok();
-    rate.sleep();
-  }
+  //   status = ros::ok();
+  //   rate.sleep();
+  // }
 }
 
 
@@ -744,10 +550,7 @@ void LaserMapping::process()
   }
 
 
-  // publish result
-  publishResult();
-
-  ROS_DEBUG_STREAM("[laserMapping] took " << stopWatch.elapsed());
+  // ROS_DEBUG_STREAM("[laserMapping] took " << stopWatch.elapsed());
 }
 
 
@@ -1043,24 +846,20 @@ void LaserMapping::optimizeTransformTobeMapped()
                         pow(matX(5, 0) * 100, 2));
 
     if (deltaR < _params.deltaRAbort && deltaT < _params.deltaTAbort) {
-      ROS_DEBUG("[laserMapping] Optimization Done: %i, %f, %f", int(iterCount), deltaR, deltaT);
+      // ROS_DEBUG("[laserMapping] Optimization Done: %i, %f, %f", int(iterCount), deltaR, deltaT);
       isConverged = true;
       break;
     }
   }
 
   if (!isConverged) {
-    ROS_DEBUG("[laserMapping] Optimization Incomplete");
+    // ROS_DEBUG("[laserMapping] Optimization Incomplete");
   }
 
   transformUpdate();
 }
 
-
-
-void LaserMapping::publishResult()
-{
-  // publish new map cloud according to the input output ratio
+bool LaserMapping::generateMapCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& map_cloud) {
   _mapFrameCount++;
   if (_mapFrameCount >= _params.mapFrameNum || _params.mapFrameNum < 0) {
     _mapFrameCount = 0;
@@ -1068,63 +867,34 @@ void LaserMapping::publishResult()
     // accumulate map cloud
     _laserCloudSurround->clear();
 
-    if(_pubLaserCloudSurround.getNumSubscribers()) {
-      size_t laserCloudSurroundNum = _laserCloudSurroundInd.size();
-      for (size_t i = 0; i < laserCloudSurroundNum; i++) {
-        size_t ind = _laserCloudSurroundInd[i];
-        *_laserCloudSurround += *_laserCloudCornerArray[ind];
-        *_laserCloudSurround += *_laserCloudSurfArray[ind];
-      }
-
-      // down size map cloud
-      _laserCloudSurroundDS->clear();
-      _downSizeFilterCorner.setInputCloud(_laserCloudSurround);
-      _downSizeFilterCorner.filter(*_laserCloudSurroundDS);
-
-      // publish new map cloud
-      publishCloudMsg(_pubLaserCloudSurround, *_laserCloudSurroundDS, ros::Time(_timeLaserOdometry), "/camera_init");
+    size_t laserCloudSurroundNum = _laserCloudSurroundInd.size();
+    for (size_t i = 0; i < laserCloudSurroundNum; i++) {
+      size_t ind = _laserCloudSurroundInd[i];
+      *_laserCloudSurround += *_laserCloudCornerArray[ind];
+      *_laserCloudSurround += *_laserCloudSurfArray[ind];
     }
+
+    // down size map cloud
+    _laserCloudSurroundDS->clear();
+    _downSizeFilterCorner.setInputCloud(_laserCloudSurround);
+    _downSizeFilterCorner.filter(*_laserCloudSurroundDS);
+
+    pcl::copyPointCloud(*_laserCloudSurroundDS, *map_cloud);
+    return true;
   }
 
+  return false;
+}
 
-  // transform full resolution input cloud to map
+bool LaserMapping::generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud) {
+// transform full resolution input cloud to map
   size_t laserCloudFullResNum = _laserCloudFullRes->points.size();
   for (size_t i = 0; i < laserCloudFullResNum; i++) {
     pointAssociateToMap(_laserCloudFullRes->points[i], _laserCloudFullRes->points[i]);
   }
 
-  // publish transformed full resolution input cloud
-  publishCloudMsg(_pubLaserCloudFullRes, *_laserCloudFullRes, ros::Time(_timeLaserOdometry), "/camera_init");
-
-
-  // publish odometry after mapped transformations
-  geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw
-      ( _transformAftMapped.rot_z.rad(),
-        -_transformAftMapped.rot_x.rad(),
-        -_transformAftMapped.rot_y.rad());
-
-  _odomAftMapped.header.stamp = ros::Time(_timeLaserOdometry);
-  _odomAftMapped.pose.pose.orientation.x = -geoQuat.y;
-  _odomAftMapped.pose.pose.orientation.y = -geoQuat.z;
-  _odomAftMapped.pose.pose.orientation.z = geoQuat.x;
-  _odomAftMapped.pose.pose.orientation.w = geoQuat.w;
-  _odomAftMapped.pose.pose.position.x = _transformAftMapped.pos.x();
-  _odomAftMapped.pose.pose.position.y = _transformAftMapped.pos.y();
-  _odomAftMapped.pose.pose.position.z = _transformAftMapped.pos.z();
-  _odomAftMapped.twist.twist.angular.x = _transformBefMapped.rot_x.rad();
-  _odomAftMapped.twist.twist.angular.y = _transformBefMapped.rot_y.rad();
-  _odomAftMapped.twist.twist.angular.z = _transformBefMapped.rot_z.rad();
-  _odomAftMapped.twist.twist.linear.x = _transformBefMapped.pos.x();
-  _odomAftMapped.twist.twist.linear.y = _transformBefMapped.pos.y();
-  _odomAftMapped.twist.twist.linear.z = _transformBefMapped.pos.z();
-  _pubOdomAftMapped.publish(_odomAftMapped);
-
-  _aftMappedTrans.stamp_ = ros::Time(_timeLaserOdometry);
-  _aftMappedTrans.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
-  _aftMappedTrans.setOrigin(tf::Vector3(_transformAftMapped.pos.x(),
-                                        _transformAftMapped.pos.y(),
-                                        _transformAftMapped.pos.z()));
-  _tfBroadcaster.sendTransform(_aftMappedTrans);
+  pcl::copyPointCloud(*_laserCloudFullRes, *registered_cloud);
+  return true;
 }
 
 } // end namespace loam

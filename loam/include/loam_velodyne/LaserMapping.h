@@ -39,12 +39,6 @@
 #include "loam_utils/IMUState.h"
 #include "loam/Parameters.h"
 
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_broadcaster.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
@@ -59,49 +53,84 @@ class LaserMapping {
 public:
   explicit LaserMapping(const LaserMappingParams params = LaserMappingParams());
 
-  /** \brief Setup component in active mode.
-   *
-   * @param node the ROS node handle
-   * @param privateNode the private ROS node handle
-   */
-  virtual bool setup(ros::NodeHandle& node,
-                     ros::NodeHandle& privateNode);
-
-  /** \brief Handler method for a new last corner cloud.
-   *
-   * @param cornerPointsLastMsg the new last corner cloud message
-   */
-  void laserCloudCornerLastHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsLastMsg);
-
-  /** \brief Handler method for a new last surface cloud.
-   *
-   * @param surfacePointsLastMsg the new last surface cloud message
-   */
-  void laserCloudSurfLastHandler(const sensor_msgs::PointCloud2ConstPtr& surfacePointsLastMsg);
-
-  /** \brief Handler method for a new full resolution cloud.
-   *
-   * @param laserCloudFullResMsg the new full resolution cloud message
-   */
-  void laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudFullResMsg);
-
-  /** \brief Handler method for a new laser odometry.
-   *
-   * @param laserOdometry the new laser odometry message
-   */
-  void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr& laserOdometry);
-
-  /** \brief Handler method for IMU messages.
-   *
-   * @param imuIn the new IMU message
-   */
-  void imuHandler(const sensor_msgs::Imu::ConstPtr& imuIn);
-
   /** \brief Process incoming messages in a loop until shutdown (used in active mode). */
   void spin();
 
   /** \brief Try to process buffered data. */
   void process();
+
+  bool generateMapCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& map_cloud);
+
+  bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud);
+
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudCornerLast() {
+    return _laserCloudCornerLast;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudSurfLast() {
+    return _laserCloudSurfLast;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes() {
+    return _laserCloudFullRes;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudSurroundDS() {
+    return _laserCloudSurroundDS;
+  }
+
+  LaserMappingParams& params() {
+    return _params;
+  }
+
+  CircularBuffer<IMUState>& imuHistory() {
+    return _imuHistory;
+  }
+
+  Twist& transformSum() {
+    return _transformSum;
+  }
+
+  Twist& transformBefMapped() {
+    return _transformBefMapped;
+  }
+
+  Twist& transformAftMapped() {
+    return _transformAftMapped;
+  }
+
+  Time& timeLaserCloudCornerLast() {
+    return _timeLaserCloudCornerLast;
+  }
+
+  Time& timeLaserCloudSurfLast() {
+    return _timeLaserCloudSurfLast;
+  }
+
+  Time& timeLaserCloudFullRes() {
+    return _timeLaserCloudFullRes;
+  }
+
+  Time& timeLaserOdometry() {
+    return _timeLaserOdometry;
+  }
+
+  bool& newLaserCloudCornerLast() {
+    return _newLaserCloudCornerLast;
+  }
+
+  bool& newLaserCloudSurfLast() {
+    return _newLaserCloudSurfLast;
+  }
+
+  bool& newLaserCloudFullRes() {
+    return _newLaserCloudFullRes;
+  }
+
+  bool& newLaserOdometry() {
+    return _newLaserOdometry;
+  }
 
 
 protected:
@@ -118,9 +147,6 @@ protected:
   void transformUpdate();
   void pointAssociateToMap(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
   void pointAssociateTobeMapped(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
-
-  /** \brief Publish the current result via the respective topics. */
-  void publishResult();
 
 
 private:
@@ -182,21 +208,6 @@ private:
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterCorner;   ///< voxel filter for down sizing corner clouds
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterSurf;     ///< voxel filter for down sizing surface clouds
   pcl::VoxelGrid<pcl::PointXYZI> _downSizeFilterMap;      ///< voxel filter for down sizing accumulated map
-
-  nav_msgs::Odometry _odomAftMapped;      ///< mapping odometry message
-  tf::StampedTransform _aftMappedTrans;   ///< mapping odometry transformation
-
-  ros::Publisher _pubLaserCloudSurround;    ///< map cloud message publisher
-  ros::Publisher _pubLaserCloudFullRes;     ///< current full resolution cloud message publisher
-  ros::Publisher _pubOdomAftMapped;         ///< mapping odometry publisher
-  tf::TransformBroadcaster _tfBroadcaster;  ///< mapping odometry transform broadcaster
-
-  ros::Subscriber _subLaserCloudCornerLast;   ///< last corner cloud message subscriber
-  ros::Subscriber _subLaserCloudSurfLast;     ///< last surface cloud message subscriber
-  ros::Subscriber _subLaserCloudFullRes;      ///< full resolution cloud message subscriber
-  ros::Subscriber _subLaserOdometry;          ///< laser odometry message subscriber
-  ros::Subscriber _subImu;                    ///< IMU message subscriber
-
 };
 
 } // end namespace loam

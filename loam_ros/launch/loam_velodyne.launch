@@ -7,7 +7,7 @@
   <node pkg="loam_ros" type="multiScanRegistration" name="multiScanRegistration" output="screen">
     
     <remap from="/multi_scan_points" to="/velodyne_points" />
-    <remap from="/imu/data" to="/raw_imu" />
+    <!-- <remap from="/imu/data" to="/raw_imu" /> -->
     <!-- <remap from="/imu/data" to="/djiros/imu" />   -->
   </node>
 
