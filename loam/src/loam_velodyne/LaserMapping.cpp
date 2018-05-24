@@ -48,9 +48,9 @@ using std::atan2;
 using std::pow;
 
 
-LaserMapping::LaserMapping(const LaserMappingParams params)
+LaserMapping::LaserMapping(const LaserMappingParams& params)
       : _params(params),
-         _frameCount(0),
+        _frameCount(0),
         _mapFrameCount(0),
         _laserCloudCenWidth(10),
         _laserCloudCenHeight(5),
@@ -262,11 +262,11 @@ bool LaserMapping::hasNewData()
 
 
 
-void LaserMapping::process()
+bool LaserMapping::process()
 {
   if (!hasNewData()) {
     // waiting for new data to arrive...
-    return;
+    return false;
   }
 
   ecl::StopWatch stopWatch;
@@ -277,7 +277,7 @@ void LaserMapping::process()
   // skip some frames?!?
   _frameCount++;
   if (_frameCount < _params.stackFrameNum && _params.stackFrameNum > 0) {
-    return;
+    return false;
   }
   _frameCount = 0;
 
@@ -549,8 +549,8 @@ void LaserMapping::process()
     _laserCloudSurfArray[ind].swap(_laserCloudSurfDSArray[ind]);
   }
 
-
-  // ROS_DEBUG_STREAM("[laserMapping] took " << stopWatch.elapsed());
+  std::cout << "[LaserMapping] took " << stopWatch.elapsed() << " seconds" << std::endl;;
+  return true;
 }
 
 
@@ -853,7 +853,7 @@ void LaserMapping::optimizeTransformTobeMapped()
   }
 
   if (!isConverged) {
-    // ROS_DEBUG("[laserMapping] Optimization Incomplete");
+    std::cout << "[LaserMapping] Optimization Incomplete" << std::endl;
   }
 
   transformUpdate();

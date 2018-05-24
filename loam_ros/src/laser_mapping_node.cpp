@@ -160,7 +160,7 @@ void publishResults()
 }
 
 
-loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
+loam::LaserMappingParams loadParameters(ros::NodeHandle& node,
                                    ros::NodeHandle& privateNode)
 {
   loam::LaserMappingParams params = loam::LaserMappingParams();
@@ -174,7 +174,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
     } else {
       params.scanPeriod = fParam;
-      ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
+      // ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
     }
   }
 
@@ -183,7 +183,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid max_iterations parameter: %d (expected > 0)", module_name, iParam);
     } else {
       params.maxIterations = iParam;
-      ROS_INFO("%s: Set max_iterations: %d", module_name, iParam);
+      // ROS_INFO("%s: Set max_iterations: %d", module_name, iParam);
     }
   }
 
@@ -192,7 +192,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid delta_T_abort parameter: %f (expected > 0)", module_name, fParam);
     } else {
       params.deltaTAbort = fParam;
-      ROS_INFO("%s: Set delta_T_abort: %g", module_name, fParam);
+      // ROS_INFO("%s: Set delta_T_abort: %g", module_name, fParam);
     }
   }
 
@@ -201,7 +201,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid delta_R_abort parameter: %f (expected > 0)", module_name, fParam);
     } else {
       params.deltaRAbort = fParam;
-      ROS_INFO("%s: Set delta_R_abort: %g", module_name, fParam);
+      // ROS_INFO("%s: Set delta_R_abort: %g", module_name, fParam);
     }
   }
 
@@ -210,7 +210,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid cornerFilterSize parameter: %f (expected >= 0.001)", module_name, fParam);
     } else {
       params.cornerFilterSize = fParam;
-      ROS_INFO("%s: Set corner down size filter leaf size: %g", module_name, fParam);
+      // ROS_INFO("%s: Set corner down size filter leaf size: %g", module_name, fParam);
     }
   }
 
@@ -219,7 +219,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid surface_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
     } else {
       params.surfFilterSize = fParam;
-      ROS_INFO("%s: Set surface down size filter leaf size: %g", module_name, fParam);
+      // ROS_INFO("%s: Set surface down size filter leaf size: %g", module_name, fParam);
     }
   }
 
@@ -228,7 +228,7 @@ loam::LaserMappingParams& loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid map_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
     } else {
       params.mapFilterSize = fParam;
-      ROS_INFO("%s: Set map down size filter leaf size: %g", module_name, fParam);
+      // ROS_INFO("%s: Set map down size filter leaf size: %g", module_name, fParam);
     }
   }
 
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
   ros::NodeHandle privateNode("~");
 
   loam::LaserMappingParams params = loadParameters(node, privateNode);
-  laserMapping.reset(new loam::LaserMapping());
+  laserMapping.reset(new loam::LaserMapping(params));
 
   // advertise laser mapping topics
   pubLaserCloudSurround = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_surround", 1);
@@ -281,8 +281,8 @@ int main(int argc, char **argv)
     ros::spinOnce();
 
     // initialization successful
-    laserMapping->process();
-    publishResults();
+    if(laserMapping->process())
+      publishResults();
 
     rate.sleep();
   }

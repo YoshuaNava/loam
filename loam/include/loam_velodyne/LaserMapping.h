@@ -51,13 +51,13 @@ namespace loam {
  */
 class LaserMapping {
 public:
-  explicit LaserMapping(const LaserMappingParams params = LaserMappingParams());
+  explicit LaserMapping(const LaserMappingParams& params = LaserMappingParams());
 
   /** \brief Process incoming messages in a loop until shutdown (used in active mode). */
   void spin();
 
   /** \brief Try to process buffered data. */
-  void process();
+  bool process();
 
   bool generateMapCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& map_cloud);
 
