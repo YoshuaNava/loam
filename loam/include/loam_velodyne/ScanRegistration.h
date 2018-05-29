@@ -43,8 +43,6 @@
 
 #include <stdint.h>
 #include <vector>
-#include <ros/node_handle.h>
-#include <sensor_msgs/Imu.h>
 #include <pcl/point_cloud.h>
 
 
@@ -75,20 +73,49 @@ class ScanRegistration {
 public:
   explicit ScanRegistration(const ScanRegistrationParams& params = ScanRegistrationParams());
 
-  /** \brief Setup component.
-   *
-   * @param node the ROS node handle
-   * @param privateNode the private ROS node handle
-   */
-  virtual bool setup(ros::NodeHandle& node,
-                     ros::NodeHandle& privateNode);
 
-  /** \brief Handler method for IMU messages.
-   *
-   * @param imuIn the new IMU message
-   */
-  virtual void handleIMUMessage(const sensor_msgs::Imu::ConstPtr& imuIn);
+  virtual void addImuData(IMUState newState);
 
+
+  pcl::PointCloud<pcl::PointXYZI>& laserCloud() {
+    return _laserCloud;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>& cornerPointsSharp() {
+    return _cornerPointsSharp;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>& cornerPointsLessSharp() {
+    return _cornerPointsLessSharp;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>& surfacePointsFlat() {
+    return _surfacePointsFlat;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>& surfacePointsLessFlat() {
+    return _surfacePointsLessFlat;
+  }
+
+  pcl::PointCloud<pcl::PointXYZ>& imuTrans() {
+    return _imuTrans;
+  }
+
+  IMUState& imuStart() {
+    return _imuStart;
+  }
+
+  IMUState& imuCur() {
+    return _imuCur;
+  }
+
+  Vector3& imuPositionShift() {
+    return _imuPositionShift;
+  }
+
+  Time& sweepStart() {
+    return _sweepStart;
+  }
 
 protected:
   /** \brief Prepare for next scan / sweep.
@@ -96,7 +123,7 @@ protected:
    * @param scanTime the current scan time
    * @param newSweep indicator if a new sweep has started
    */
-  void reset(const ros::Time& scanTime,
+  void reset(const Time& scanTime,
              const bool& newSweep = true);
 
   /** \breif Check is IMU data is available. */
@@ -147,9 +174,6 @@ protected:
   void markAsPicked(const size_t& cloudIdx,
                     const size_t& scanIdx);
 
-  /** \brief Publish the current result via the respective topics. */
-  void publishResult();
-
 
 private:
   /** \brief Try to interpolate the IMU state for the given time.
@@ -186,14 +210,6 @@ protected:
   std::vector<size_t> _regionSortIndices;   ///< sorted region indices based on point curvature
   std::vector<int> _scanNeighborPicked;     ///< flag if neighboring point was already picked
 
-  ros::Subscriber _subImu;    ///< IMU message subscriber
-
-  ros::Publisher _pubLaserCloud;              ///< full resolution cloud message publisher
-  ros::Publisher _pubCornerPointsSharp;       ///< sharp corner cloud message publisher
-  ros::Publisher _pubCornerPointsLessSharp;   ///< less sharp corner cloud message publisher
-  ros::Publisher _pubSurfPointsFlat;          ///< flat surface cloud message publisher
-  ros::Publisher _pubSurfPointsLessFlat;      ///< less flat surface cloud message publisher
-  ros::Publisher _pubImuTrans;                ///< IMU transformation message publisher
 };
 
 } // end namespace loam

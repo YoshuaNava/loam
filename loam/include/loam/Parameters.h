@@ -80,6 +80,8 @@ struct ScanRegistrationParams {
   /** **/
   float vAngleMin, vAngleMax;
 
+  int nScanRings;
+
   ScanRegistrationParams(const float& scanPeriod_ = 0.1,
                         const int& imuHistorySize_ = 200,
                         const int& nFeatureRegions_ = 6,

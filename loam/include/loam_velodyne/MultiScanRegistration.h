@@ -36,8 +36,6 @@
 
 #include "loam_velodyne/ScanRegistration.h"
 
-#include <sensor_msgs/PointCloud2.h>
-
 
 namespace loam {
 
@@ -107,35 +105,21 @@ public:
                         const ScanRegistrationParams& params = ScanRegistrationParams());
 
 
-  /** \brief Setup component in active mode.
-   *
-   * @param node the ROS node handle
-   * @param privateNode the private ROS node handle
-   */
-  bool setup(ros::NodeHandle& node,
-             ros::NodeHandle& privateNode);
-
-  /** \brief Handler method for input cloud messages.
-   *
-   * @param laserCloudMsg the new input cloud message to process
-   */
-  void handleCloudMessage(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg);
-
   /** \brief Process a new input cloud.
    *
    * @param laserCloudIn the new input cloud to process
    * @param scanTime the scan (message) timestamp
    */
   void process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
-               const ros::Time& scanTime);
+               const Time& scanTime);
 
+  int& systemDelay() {
+    return _systemDelay;
+  }
 
 protected:
   int _systemDelay;             ///< system startup delay counter
   MultiScanMapper _scanMapper;  ///< mapper for mapping vertical point angles to scan ring IDs
-
-  ros::Subscriber _subLaserCloud;   ///< input cloud message subscriber
-
 
 private:
   static const int SYSTEM_DELAY = 0;
