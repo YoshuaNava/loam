@@ -1,0 +1,43 @@
+loam: {
+  scan_period: 0.1,
+
+  registration: {
+    imu_history_size: 200,
+    n_feature_regions: 6,
+    curvature_regions: 5,
+    max_corner_sharp: 2,
+    max_corner_less_sharp: 2,
+    max_surface_flat: 4,
+    less_flat_filter_size: 0.2,
+    surface_curvature_threshold: 0.1,
+    system_delay: 0,
+    
+    # lidar_model: "VLP-16",
+    # lidar_model: "HDL-32",
+    lidar_model: "HDL-64E",
+  },
+
+  odometry: {
+    io_ratio: 1,
+    max_iterations: 15,
+    delta_T_abort: 0.03,
+    delta_R_abort: 0.05,
+  },
+
+  mapping: {
+    stack_frame_num: 5,
+    map_frame_num: -1,
+    max_iterations: 30,
+    delta_T_abort: 0.01,
+    delta_R_abort: 0.005,
+
+    corner_filter_size: 0.2,
+    surface_filter_size: 0.4,
+    map_filter_size: 0.6,
+  },
+
+  log_results: true,
+  log_filename: "/home/alfredoso/Datasets/KITTI/benchmark/result_05_loam.txt",
+
+  publish_path: true,
+}
