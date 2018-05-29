@@ -38,7 +38,7 @@
 #include "loam_utils/nanoflann_pcl.h"
 #include "loam/Parameters.h"
 
-#include <ros/node_handle.h>
+#include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/Odometry.h>
 #include <pcl/point_cloud.h>
@@ -56,56 +56,130 @@ class LaserOdometry {
 public:
   explicit LaserOdometry(const LaserOdometryParams& params = LaserOdometryParams());
 
-  /** \brief Setup component.
-   *
-   * @param node the ROS node handle
-   * @param privateNode the private ROS node handle
-   */
-  virtual bool setup(ros::NodeHandle& node,
-                     ros::NodeHandle& privateNode);
-
-  /** \brief Handler method for a new sharp corner cloud.
-   *
-   * @param cornerPointsSharpMsg the new sharp corner cloud message
-   */
-  void laserCloudSharpHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsSharpMsg);
-
-  /** \brief Handler method for a new less sharp corner cloud.
-   *
-   * @param cornerPointsLessSharpMsg the new less sharp corner cloud message
-   */
-  void laserCloudLessSharpHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsLessSharpMsg);
-
-  /** \brief Handler method for a new flat surface cloud.
-   *
-   * @param surfPointsFlatMsg the new flat surface cloud message
-   */
-  void laserCloudFlatHandler(const sensor_msgs::PointCloud2ConstPtr& surfPointsFlatMsg);
-
-  /** \brief Handler method for a new less flat surface cloud.
-   *
-   * @param surfPointsLessFlatMsg the new less flat surface cloud message
-   */
-  void laserCloudLessFlatHandler(const sensor_msgs::PointCloud2ConstPtr& surfPointsLessFlatMsg);
-
-  /** \brief Handler method for a new full resolution cloud.
-   *
-   * @param laserCloudFullResMsg the new full resolution cloud message
-   */
-  void laserCloudFullResHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudFullResMsg);
-
-  /** \brief Handler method for a new IMU transformation information.
-   *
-   * @param laserCloudFullResMsg the new IMU transformation information message
-   */
-  void imuTransHandler(const sensor_msgs::PointCloud2ConstPtr& imuTransMsg);
-
   /** \brief Process incoming messages in a loop until shutdown (used in active mode). */
   void spin();
 
   /** \brief Try to process buffered data. */
-  void process();
+  bool process();
 
+  bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud);
+
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsSharp() {
+    return _cornerPointsSharp;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsLessSharp() {
+    return _cornerPointsLessSharp;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsFlat() {
+    return _surfPointsFlat;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsLessFlat() {
+    return _surfPointsLessFlat;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes() {
+    return _laserCloudFullRes;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& lastCornerCloud() {
+    return _lastCornerCloud;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr& lastSurfaceCloud() {
+    return _lastSurfaceCloud;
+  }
+
+  LaserOdometryParams& params() {
+    return _params;
+  }
+
+  Twist& transformSum() {
+    return _transformSum;
+  }
+
+  Angle& imuRollStart() {
+    return _imuRollStart;
+  }
+
+  Angle& imuPitchStart() {
+    return _imuPitchStart;
+  }
+
+  Angle& imuYawStart() {
+    return _imuYawStart;
+  }
+
+  Angle& imuRollEnd() {
+    return _imuRollEnd;
+  }
+
+  Angle& imuPitchEnd() {
+    return _imuPitchEnd;
+  }
+
+  Angle& imuYawEnd() {
+    return _imuYawEnd;
+  }
+
+  Vector3& imuShiftFromStart() {
+    return _imuShiftFromStart;
+  }
+
+  Vector3& imuVeloFromStart() {
+    return _imuVeloFromStart;
+  }
+
+  Time& timeCornerPointsSharp() {
+    return _timeCornerPointsSharp;
+  }
+
+  Time& timeCornerPointsLessSharp() {
+    return _timeCornerPointsLessSharp;
+  }
+
+  Time& timeSurfPointsFlat() {
+    return _timeSurfPointsFlat;
+  }
+
+  Time& timeSurfPointsLessFlat() {
+    return _timeSurfPointsLessFlat;
+  }
+
+  Time& timeLaserCloudFullRes() {
+    return _timeLaserCloudFullRes;
+  }
+
+  Time& timeImuTrans() {
+    return _timeImuTrans;
+  }
+
+  bool& newCornerPointsSharp() {
+    return _newCornerPointsSharp;
+  }
+
+  bool& newCornerPointsLessSharp() {
+    return _newCornerPointsLessSharp;
+  }
+
+  bool& newSurfPointsFlat() {
+    return _newSurfPointsFlat;
+  }
+
+  bool& newSurfPointsLessFlat() {
+    return _newSurfPointsLessFlat;
+  }
+
+  bool& newLaserCloudFullRes() {
+    return _newLaserCloudFullRes;
+  }
+
+  bool& newImuTrans() {
+    return _newImuTrans;
+  }
 
 protected:
   /** \brief Reset flags, etc. */
@@ -136,9 +210,7 @@ protected:
   void accumulateRotation(Angle cx, Angle cy, Angle cz,
                           Angle lx, Angle ly, Angle lz,
                           Angle &ox, Angle &oy, Angle &oz);
-
-  /** \brief Publish the current result via the respective topics. */
-  void publishResult();
+  
 
 private:
 
@@ -165,7 +237,7 @@ private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr _cornerPointsLessSharp;  ///< less sharp corner points cloud
   pcl::PointCloud<pcl::PointXYZI>::Ptr _surfPointsFlat;         ///< flat surface points cloud
   pcl::PointCloud<pcl::PointXYZI>::Ptr _surfPointsLessFlat;     ///< less flat surface points cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloud;             ///< full resolution cloud
+  pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloudFullRes;             ///< full resolution cloud
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr _lastCornerCloud;    ///< last corner points cloud
   pcl::PointCloud<pcl::PointXYZI>::Ptr _lastSurfaceCloud;   ///< last surface points cloud
@@ -195,18 +267,9 @@ private:
   nav_msgs::Odometry _laserOdometryMsg;       ///< laser odometry message
   tf::StampedTransform _laserOdometryTrans;   ///< laser odometry transformation
 
-  ros::Publisher _pubLaserCloudCornerLast;  ///< last corner cloud message publisher
-  ros::Publisher _pubLaserCloudSurfLast;    ///< last surface cloud message publisher
-  ros::Publisher _pubLaserCloudFullRes;     ///< full resolution cloud message publisher
   ros::Publisher _pubLaserOdometry;         ///< laser odometry publisher
   tf::TransformBroadcaster _tfBroadcaster;  ///< laser odometry transform broadcaster
 
-  ros::Subscriber _subCornerPointsSharp;      ///< sharp corner cloud message subscriber
-  ros::Subscriber _subCornerPointsLessSharp;  ///< less sharp corner cloud message subscriber
-  ros::Subscriber _subSurfPointsFlat;         ///< flat surface cloud message subscriber
-  ros::Subscriber _subSurfPointsLessFlat;     ///< less flat surface cloud message subscriber
-  ros::Subscriber _subLaserCloudFullRes;      ///< full resolution cloud message subscriber
-  ros::Subscriber _subImuTrans;               ///< IMU transformation information message subscriber
 };
 
 } // end namespace loam

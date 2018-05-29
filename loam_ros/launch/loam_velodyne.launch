@@ -1,19 +1,21 @@
 <?xml version="1.0"?>
 <launch>
 
+  <arg name="lidar_topic" default="/velodyne_points" />
+  <arg name="imu_topic" default="/imu/data" />
   <arg name="rviz" default="true" />
   <rosparam command="load" file="$(find loam_ros)/config/loam_velodyne.yaml"/>
 
   <node pkg="loam_ros" type="multiScanRegistration" name="multiScanRegistration" output="screen">
-    
-    <remap from="/multi_scan_points" to="/velodyne_points" />
-    <!-- <remap from="/imu/data" to="/raw_imu" /> -->
-    <!-- <remap from="/imu/data" to="/djiros/imu" />   -->
+    <remap from="/multi_scan_points" to="$(arg lidar_topic)" />
+    <remap from="/imu/data" to="$(arg imu_topic)" />
   </node>
 
   <node pkg="loam_ros" type="laserOdometry" name="laserOdometry" output="screen" respawn="true" />
 
-  <node pkg="loam_ros" type="laserMapping" name="laserMapping" output="screen" />
+  <node pkg="loam_ros" type="laserMapping" name="laserMapping" output="screen" >
+    <remap from="/imu/data" to="$(arg imu_topic)" />
+  </node>
 
   <node pkg="loam_ros" type="transformMaintenance" name="transformMaintenance" output="screen" />
 
