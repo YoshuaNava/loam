@@ -7,6 +7,7 @@
 #include <tf/transform_broadcaster.h>
 
 #include "loam_velodyne/LaserMapping.h"
+#include "common.h"
 
 
 std::unique_ptr<loam::LaserMapping> laserMapping;
@@ -283,6 +284,8 @@ int main(int argc, char **argv)
 
     rate.sleep();
   }
+
+  laserMapping.reset();
 
   return 0;
 }

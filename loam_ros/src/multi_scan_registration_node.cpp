@@ -5,6 +5,7 @@
 
 #include "loam_utils/math_utils.h"
 #include "loam_velodyne/MultiScanRegistration.h"
+#include "common.h"
 
 
 std::unique_ptr<loam::MultiScanRegistration> multiScanRegistration;
@@ -129,7 +130,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
     } else {
       params.scanPeriod = fParam;
-      ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
+      // ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
     }
   }
 
@@ -138,7 +139,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid imu_history_size parameter: %d (expected >= 1)", module_name, iParam);
     } else {
       params.imuHistorySize = iParam;
-      ROS_INFO("%s: Set imu_history_size: %d", module_name, iParam);
+      // ROS_INFO("%s: Set imu_history_size: %d", module_name, iParam);
     }
   }
 
@@ -147,7 +148,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid n_feature_regions parameter: %d (expected >= 1)", module_name, iParam);
     } else {
       params.nFeatureRegions = iParam;
-      ROS_INFO("%s: Set n_feature_regions: %d", module_name, iParam);
+      // ROS_INFO("%s: Set n_feature_regions: %d", module_name, iParam);
     }
   }
 
@@ -156,7 +157,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid curvature_region parameter: %d (expected >= 1)", module_name, iParam);
     } else {
       params.curvatureRegion = iParam;
-      ROS_INFO("%s: Set curvature_region: +/- %d", module_name, iParam);
+      // ROS_INFO("%s: Set curvature_region: +/- %d", module_name, iParam);
     }
   }
 
@@ -166,7 +167,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
     } else {
       params.maxCornerSharp = iParam;
       params.maxCornerLessSharp = 10 * iParam;
-      ROS_INFO("%s: Set max_corner_sharp / less sharp: %d / %d", module_name, iParam, params.maxCornerLessSharp);
+      // ROS_INFO("%s: Set max_corner_sharp / less sharp: %d / %d", module_name, iParam, params.maxCornerLessSharp);
     }
   }
 
@@ -175,7 +176,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid max_corner_less_sharp parameter: %d (expected >= %d)", module_name, iParam, params.maxCornerSharp);
     } else {
       params.maxCornerLessSharp = iParam;
-      ROS_INFO("%s: Set max_corner_less_sharp: %d", module_name, iParam);
+      // ROS_INFO("%s: Set max_corner_less_sharp: %d", module_name, iParam);
     }
   }
 
@@ -184,7 +185,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid max_surface_flat parameter: %d (expected >= 1)", module_name, iParam);
     } else {
       params.maxSurfaceFlat = iParam;
-      ROS_INFO("%s: Set max_surface_flat: %d", module_name, iParam);
+      // ROS_INFO("%s: Set max_surface_flat: %d", module_name, iParam);
     }
   }
 
@@ -193,7 +194,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid surface_curvature_threshold parameter: %f (expected >= 0.001)", module_name, fParam);
     } else {
       params.surfaceCurvatureThreshold = fParam;
-      ROS_INFO("%s: Set surface_curvature_threshold: %g", module_name, fParam);
+      // ROS_INFO("%s: Set surface_curvature_threshold: %g", module_name, fParam);
     }
   }
 
@@ -202,7 +203,7 @@ loam::ScanRegistrationParams loadParameters(ros::NodeHandle& node,
       ROS_ERROR("%s: Invalid less_flat_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
     } else {
       params.lessFlatFilterSize = fParam;
-      ROS_INFO("%s: Set less_flat_filter_size: %g", module_name, fParam);
+      // ROS_INFO("%s: Set less_flat_filter_size: %g", module_name, fParam);
     }
   }
 
@@ -287,11 +288,9 @@ int main(int argc, char **argv)
   // // subscribe to IMU topic
   subImu = node.subscribe<sensor_msgs::Imu>("/imu/data", 50, handleIMUMessage);
 
-
-  // if (multiScanRegistration->setup(node, privateNode)) {
-    // initialization successful
-    ros::spin();
-  // }
+  ros::spin();
+  
+  multiScanRegistration.reset();
 
   return 0;
 }

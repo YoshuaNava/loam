@@ -38,9 +38,6 @@
 #include "loam_utils/nanoflann_pcl.h"
 #include "loam/Parameters.h"
 
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <nav_msgs/Odometry.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <tf/transform_datatypes.h>
@@ -263,12 +260,6 @@ private:
 
   Vector3 _imuShiftFromStart;
   Vector3 _imuVeloFromStart;
-
-  nav_msgs::Odometry _laserOdometryMsg;       ///< laser odometry message
-  tf::StampedTransform _laserOdometryTrans;   ///< laser odometry transformation
-
-  ros::Publisher _pubLaserOdometry;         ///< laser odometry publisher
-  tf::TransformBroadcaster _tfBroadcaster;  ///< laser odometry transform broadcaster
 
 };
 

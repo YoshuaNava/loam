@@ -41,6 +41,7 @@
 
 #include "loam_utils/common.h"
 #include "loam_velodyne/TransformMaintenance.h"
+#include "common.h"
 
 namespace loam {
 

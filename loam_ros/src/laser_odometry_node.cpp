@@ -4,6 +4,7 @@
 #include <nav_msgs/Odometry.h>
 
 #include "loam_velodyne/LaserOdometry.h"
+#include "common.h"
 
 
 std::unique_ptr<loam::LaserOdometry> laserOdometry;
@@ -274,6 +275,8 @@ int main(int argc, char **argv)
 
     rate.sleep();
   }
+
+  laserOdometry.reset();
 
   return 0;
 }

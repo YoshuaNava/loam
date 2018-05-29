@@ -7,14 +7,7 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O3 -march=native")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3 -march=native")
 
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  nav_msgs
   pcl_catkin
-  sensor_msgs
-  roscpp
-  rospy
-  std_msgs
-  tf
   ecl_time
   
   QUIET
@@ -31,7 +24,7 @@ include_directories(
 )
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs pcl_catkin ecl_time
+  CATKIN_DEPENDS pcl_catkin ecl_time
   DEPENDS EIGEN3 #PCL
   INCLUDE_DIRS include
   LIBRARIES loam_velodyne
