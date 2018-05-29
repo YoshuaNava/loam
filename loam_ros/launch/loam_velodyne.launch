@@ -4,7 +4,7 @@
   <arg name="lidar_topic" default="/velodyne_points" />
   <arg name="imu_topic" default="/imu/data" />
   <arg name="rviz" default="true" />
-  <rosparam command="load" file="$(find loam_ros)/config/loam_velodyne.yaml"/>
+  <rosparam command="load" file="$(find loam_ros)/config/loam_velodyne/default_params.yaml"/>
 
   <node pkg="loam_ros" type="multiScanRegistration" name="multiScanRegistration" output="screen">
     <remap from="/multi_scan_points" to="$(arg lidar_topic)" />

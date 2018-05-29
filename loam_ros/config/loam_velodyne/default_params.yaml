@@ -18,18 +18,18 @@ loam: {
   },
 
   odometry: {
-    io_ratio: 1,
+    io_ratio: 2,
     max_iterations: 15,
-    delta_T_abort: 0.05,
-    delta_R_abort: 0.03,
+    delta_T_abort: 0.1,
+    delta_R_abort: 0.1,
   },
 
   mapping: {
-    stack_frame_num: 5,
-    map_frame_num: -1,
-    max_iterations: 30,
-    delta_T_abort: 0.01,
-    delta_R_abort: 0.005,
+    stack_frame_num: 1,
+    map_frame_num: 5,
+    max_iterations: 20,
+    delta_T_abort: 0.05,
+    delta_R_abort: 0.05,
 
     corner_filter_size: 0.2,
     surface_filter_size: 0.4,
