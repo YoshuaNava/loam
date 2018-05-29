@@ -549,7 +549,7 @@ bool LaserMapping::process()
     _laserCloudSurfArray[ind].swap(_laserCloudSurfDSArray[ind]);
   }
 
-  std::cout << "[LaserMapping] took " << stopWatch.elapsed() << " seconds" << std::endl;;
+  // std::cout << "[LaserMapping] took " << stopWatch.elapsed() << " seconds" << std::endl;;
   return true;
 }
 
@@ -853,7 +853,7 @@ void LaserMapping::optimizeTransformTobeMapped()
   }
 
   if (!isConverged) {
-    std::cout << "[LaserMapping] Optimization Incomplete" << std::endl;
+    // std::cout << "[LaserMapping] Optimization Incomplete" << std::endl;
   }
 
   transformUpdate();

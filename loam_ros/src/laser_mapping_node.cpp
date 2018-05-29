@@ -5,6 +5,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+
 #include "loam_velodyne/LaserMapping.h"
 
 
@@ -32,9 +33,7 @@ ros::Subscriber subImu;                    ///< IMU message subscriber
 void laserCloudCornerLastHandler(const sensor_msgs::PointCloud2ConstPtr& cornerPointsLastMsg)
 {
   laserMapping->timeLaserCloudCornerLast() = cornerPointsLastMsg->header.stamp.toSec();
-
   pcl::fromROSMsg(*cornerPointsLastMsg, *laserMapping->laserCloudCornerLast());
-
   laserMapping->newLaserCloudCornerLast() = true;
 }
 
@@ -46,9 +45,7 @@ void laserCloudCornerLastHandler(const sensor_msgs::PointCloud2ConstPtr& cornerP
 void laserCloudSurfLastHandler(const sensor_msgs::PointCloud2ConstPtr& surfacePointsLastMsg)
 {
   laserMapping->timeLaserCloudSurfLast() = surfacePointsLastMsg->header.stamp.toSec();
-
   pcl::fromROSMsg(*surfacePointsLastMsg, *laserMapping->laserCloudSurfLast());
-
   laserMapping->newLaserCloudSurfLast() = true;
 }
 
@@ -161,7 +158,7 @@ void publishResults()
 
 
 loam::LaserMappingParams loadParameters(ros::NodeHandle& node,
-                                   ros::NodeHandle& privateNode)
+                                        ros::NodeHandle& privateNode)
 {
   loam::LaserMappingParams params = loam::LaserMappingParams();
   const char* module_name = "LaserMapping:";

@@ -64,6 +64,10 @@ public:
   bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud);
 
 
+  LaserMappingParams& params() {
+    return _params;
+  }
+
   pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudCornerLast() {
     return _laserCloudCornerLast;
   }
@@ -78,10 +82,6 @@ public:
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudSurroundDS() {
     return _laserCloudSurroundDS;
-  }
-
-  LaserMappingParams& params() {
-    return _params;
   }
 
   CircularBuffer<IMUState>& imuHistory() {
