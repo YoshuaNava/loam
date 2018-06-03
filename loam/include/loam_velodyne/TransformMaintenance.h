@@ -33,6 +33,8 @@
 #ifndef LOAM_TRANSFORMMAINTENANCE_H
 #define LOAM_TRANSFORMMAINTENANCE_H
 
+#include <mutex>
+
 #include <Eigen/Dense>
 
 #include "loam_utils/common.h"
@@ -45,6 +47,9 @@ namespace loam {
 class TransformMaintenance {
 public:
   TransformMaintenance();
+
+  void correctEstimate(const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(), 
+                       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   float* getIntegratedTransform();
 
@@ -70,6 +75,8 @@ protected:
 
 
 private:
+  std::mutex main_thread_mutex_;
+
   float _transformSum[6];
   float _transformIncre[6];
   float _transformMapped[6];

@@ -54,7 +54,6 @@ TransformMaintenanceRos::TransformMaintenanceRos()
   _laserOdometryTrans2.child_frame_id_ = "/camera";
 }
 
-
 bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &privateNode)
 {
   // load parameters
@@ -66,7 +65,7 @@ bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &priv
   _pubLaserOdometry2 = node.advertise<nav_msgs::Odometry> ("/integrated_to_init", 5);
 
   if(_publishPath)
-    _pubOdomToPath = node.advertise<nav_msgs::Path> ("/odom_to_path", 2);
+    _pubOdomToPath = node.advertise<nav_msgs::Path> ("/odom_to_path", 2, true);
 
   // subscribe to laser odometry and mapping odometry topics
   _subLaserOdometry = node.subscribe<nav_msgs::Odometry>
@@ -75,6 +74,37 @@ bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &priv
   _subOdomAftMapped = node.subscribe<nav_msgs::Odometry>
       ("/aft_mapped_to_init", 5, &TransformMaintenanceRos::odomAftMappedCallback, this);
 
+  reset_service_ = node.advertiseService("transformMaintenance/reset", &TransformMaintenanceRos::resetCallback, this);
+  pose_correction_service_ = node.advertiseService("transformMaintenance/correct_pose", &TransformMaintenanceRos::correctPoseCallback, this);
+  return true;
+}
+
+bool TransformMaintenanceRos::resetCallback(std_srvs::Empty::Request  &req,
+                                            std_srvs::Empty::Response &res)
+{
+  ROS_INFO("Transform maintenance RESET");
+  _transformMaintainer.correctEstimate();
+  return true;
+}
+
+bool TransformMaintenanceRos::correctPoseCallback(loam_msgs::PoseUpdate::Request  &req,
+                                                  loam_msgs::PoseUpdate::Response &res)
+{
+  ROS_INFO("Transform maintenance CORRECTION");
+  Eigen::Vector3d pos(req.pose.position.x, req.pose.position.y, req.pose.position.z);
+  Eigen::Quaterniond rot(req.pose.orientation.w, req.pose.orientation.z, -req.pose.orientation.x, -req.pose.orientation.y);
+  Eigen::Vector3d rpy = rot.toRotationMatrix().eulerAngles(0,1,2);
+  res.success = true;
+
+  // ROS_INFO("Received transform");
+  // std::cout << "transform maintenance pose correction" << std::endl;
+  // std::cout << "pos ->  " << pos.transpose() << std::endl;
+  // std::cout << "rpy ->  " << rpy.transpose() << std::endl;
+  // std::cout << "quat ->  " << rot.x() << ", " << rot.y() << ", " <<  rot.z() << ", " << rot.w() << std::endl;
+
+  _transformMaintainer.correctEstimate(pos, rpy);
+
+  // Eigen::Quaterniond rot(laserOdometry->pose.pose.orientation.w, laserOdometry->pose.pose.orientation.z, -laserOdometry->pose.pose.orientation.x, -laserOdometry->pose.pose.orientation.y);
   return true;
 }
 

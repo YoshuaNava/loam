@@ -77,6 +77,36 @@ LaserOdometry::LaserOdometry(const LaserOdometryParams& params)
         _coeffSel(new pcl::PointCloud<pcl::PointXYZI>())
 { }
 
+void LaserOdometry::correctEstimate(const Eigen::Vector3d& pos, const Eigen::Vector3d& rpy) {
+  std::lock_guard<std::mutex> lock(main_thread_mutex_);
+  std::cout << "laser odometry pose correction" << std::endl;
+
+  _transformSum.pos.x() = pos(0);
+  _transformSum.pos.y() = pos(1);
+  _transformSum.pos.z() = pos(2);
+  // _transformSum.rot_x = -rpy(1);
+  // _transformSum.rot_y = -rpy(2);
+  // _transformSum.rot_z = rpy(0);
+
+  resetEstimateValues();
+  resetFlags();
+}
+
+void LaserOdometry::resetEstimateValues() {
+  // _systemInited = false;
+  // _frameCount = 0;
+  // _transform = Twist();
+  // _imuRollStart = Angle();
+  // _imuPitchStart = Angle();
+  // _imuYawStart = Angle();
+  // _imuRollEnd = Angle();
+  // _imuPitchEnd = Angle();
+  // _imuYawEnd = Angle();
+  // _imuShiftFromStart = Vector3();
+  // _imuShiftFromStart = Vector3();
+  // _lastCornerCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  // _lastSurfaceCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
+}
 
 void LaserOdometry::transformToStart(const pcl::PointXYZI& pi, pcl::PointXYZI& po)
 {
@@ -257,7 +287,7 @@ void LaserOdometry::spin()
 
 
 
-void LaserOdometry::reset()
+void LaserOdometry::resetFlags()
 {
   _newCornerPointsSharp = false;
   _newCornerPointsLessSharp = false;
@@ -289,10 +319,11 @@ bool LaserOdometry::process()
     return false;
   }
 
+  std::lock_guard<std::mutex> lock(main_thread_mutex_);
   ecl::StopWatch stopWatch;
 
   // reset flags, etc.
-  reset();
+  resetFlags();
 
   if (!_systemInited) {
     _cornerPointsLessSharp.swap(_lastCornerCloud);

@@ -52,6 +52,39 @@ TransformMaintenance::TransformMaintenance()
   }
 }
 
+void TransformMaintenance::correctEstimate(const Eigen::Vector3d& pos, 
+                                           const Eigen::Vector3d& rpy) {
+  std::lock_guard<std::mutex> lock(main_thread_mutex_);
+
+  for (int i = 0; i < 3; i++) {
+    _transformSum[3+i] = pos(i);
+    _transformAftMapped[3+i] = pos(i);
+    _transformMapped[3+i] = pos(i);
+    _transformIncre[3+i] = pos(i);
+  }
+  _transformIncre[0] = -rpy(1);
+  _transformIncre[1] = -rpy(2);
+  _transformIncre[2] = rpy(0);
+  _transformMapped[0] = -rpy(1);
+  _transformMapped[1] = -rpy(2);
+  _transformMapped[2] = rpy(0);
+  _transformAftMapped[0] = -rpy(1);
+  _transformAftMapped[1] = -rpy(2);
+  _transformAftMapped[2] = rpy(0);
+  _transformSum[0] = -rpy(1);
+  _transformSum[1] = -rpy(2);
+  _transformSum[2] = rpy(0);
+
+  // for (int i = 0; i < 6; i++) {
+  //   _transformBefMapped[i] = 0;
+  //   std::cout << "loop = " << i << std::endl;
+  //   std::cout << _transformAftMapped[i] << std::endl;
+  //   std::cout << _transformMapped[i] << std::endl;
+  //   std::cout << _transformIncre[i] << std::endl;
+  //   std::cout << _transformSum[i] << std::endl;
+  // }
+}
+
 float* TransformMaintenance::getIntegratedTransform()
 {
   return _transformMapped;
@@ -59,6 +92,7 @@ float* TransformMaintenance::getIntegratedTransform()
 
 void TransformMaintenance::transformAssociateToMap()
 {
+  std::lock_guard<std::mutex> lock(main_thread_mutex_);
   float x1 = cos(_transformSum[1]) * (_transformBefMapped[3] - _transformSum[3])
              - sin(_transformSum[1]) * (_transformBefMapped[5] - _transformSum[5]);
   float y1 = _transformBefMapped[4] - _transformSum[4];

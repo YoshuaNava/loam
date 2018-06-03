@@ -3,11 +3,13 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_srvs/Empty.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 
 #include "loam_velodyne/LaserMapping.h"
 #include "common.h"
+#include "loam_msgs/PoseUpdate.h"
 
 
 std::unique_ptr<loam::LaserMapping> laserMapping;
@@ -26,6 +28,38 @@ ros::Subscriber subLaserCloudFullRes;      ///< full resolution cloud message su
 ros::Subscriber subLaserOdometry;          ///< laser odometry message subscriber
 ros::Subscriber subImu;                    ///< IMU message subscriber
 
+ros::ServiceServer reset_service;
+ros::ServiceServer pose_correction_service;
+
+
+bool resetCallback(std_srvs::Empty::Request  &req,
+                   std_srvs::Empty::Response &res)
+{
+  ROS_INFO("Laser mapping RESET");
+  laserMapping->correctEstimate();
+  return true;
+}
+
+bool correctPoseCallback(loam_msgs::PoseUpdate::Request  &req,
+                         loam_msgs::PoseUpdate::Response &res)
+{
+  ROS_ERROR("Laser mapping CORRECTION");
+  Eigen::Vector3d pos(req.pose.position.x, req.pose.position.y, req.pose.position.z);
+  Eigen::Quaterniond rot(req.pose.orientation.w, -req.pose.orientation.y, -req.pose.orientation.z, req.pose.orientation.x);
+  Eigen::Vector3d rpy = rot.toRotationMatrix().eulerAngles(0,1,2);
+  res.success = true;
+
+  // loam::Twist transform = laserMapping->transformTobeMapped();
+  // ROS_INFO("Transform sum before correction");
+  // std::cout << "pos ->  " << transform.pos.x() << ", " << transform.pos.y() << ", " <<  transform.pos.z() << std::endl;
+  // std::cout << "rpy ->  " << transform.rot_z.rad() << ", " << -transform.rot_x.rad() << ", " << -transform.rot_y.rad() << std::endl;
+  // ROS_INFO("Received transform");
+  // std::cout << "pos ->  " << pos.transpose() << std::endl;
+  // std::cout << "rpy ->  " << rpy.transpose() << std::endl;
+
+  laserMapping->correctEstimate(pos, rpy);
+  return true;
+}
 
 /** \brief Handler method for a new last corner cloud.
  *
@@ -266,6 +300,10 @@ int main(int argc, char **argv)
 
   // subscribe to IMU topic
   subImu = node.subscribe<sensor_msgs::Imu> ("/imu/data", 50, imuHandler);
+
+  // advertise reset and pose correction services
+  reset_service = node.advertiseService("laserMapping/reset", resetCallback);
+  pose_correction_service = node.advertiseService("laserMapping/correct_pose", correctPoseCallback);
 
   // initialize mapping odometry and odometry tf messages  
   odomAftMapped.header.frame_id = "/camera_init";

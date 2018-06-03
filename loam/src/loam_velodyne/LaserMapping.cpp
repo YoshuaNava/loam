@@ -98,6 +98,46 @@ LaserMapping::LaserMapping(const LaserMappingParams& params)
   _downSizeFilterMap.setLeafSize(_params.mapFilterSize, _params.mapFilterSize, _params.mapFilterSize);
 }
 
+void LaserMapping::correctEstimate(const Eigen::Vector3d& pos, const Eigen::Vector3d& rpy) {
+  std::lock_guard<std::mutex> lock(main_thread_mutex_);
+
+  _transformAftMapped.pos.x() = pos(0);
+  _transformAftMapped.pos.y() = pos(1);
+  _transformAftMapped.pos.z() = pos(2);
+  // _transformAftMapped.rot_x = -rpy(1);
+  // _transformAftMapped.rot_y = -rpy(2);
+  // _transformAftMapped.rot_z = rpy(0);
+
+  _transformTobeMapped = _transformAftMapped;
+  // _transformIncre = Twist();
+  // _transformBefMapped = Twist();
+
+  resetEstimateValues();
+  resetFlags();
+}
+
+void LaserMapping::resetEstimateValues() {
+  _imuHistory = CircularBuffer<IMUState>();
+  _frameCount = _params.stackFrameNum - 1;
+  _mapFrameCount = _params.mapFrameNum - 1;
+  _laserCloudCenWidth = 10;
+  _laserCloudCenHeight = 5;
+  _laserCloudCenDepth = 10;
+  
+  // setup cloud vectors
+  _laserCloudCornerArray.resize(_params.laserCloudNum);
+  _laserCloudSurfArray.resize(_params.laserCloudNum);
+  _laserCloudCornerDSArray.resize(_params.laserCloudNum);
+  _laserCloudSurfDSArray.resize(_params.laserCloudNum);
+
+  for (size_t i = 0; i < _params.laserCloudNum; i++) {
+    _laserCloudCornerArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
+    _laserCloudSurfArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
+    _laserCloudCornerDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
+    _laserCloudSurfDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
+  }
+}
+
 void LaserMapping::transformAssociateToMap()
 {
   _transformIncre.pos = _transformBefMapped.pos - _transformSum.pos;
@@ -241,7 +281,7 @@ void LaserMapping::spin()
 }
 
 
-void LaserMapping::reset()
+void LaserMapping::resetFlags()
 {
   _newLaserCloudCornerLast = false;
   _newLaserCloudSurfLast = false;
@@ -269,10 +309,11 @@ bool LaserMapping::process()
     return false;
   }
 
+  std::lock_guard<std::mutex> lock(main_thread_mutex_);
   ecl::StopWatch stopWatch;
 
   // reset flags, etc.
-  reset();
+  resetFlags();
 
   // skip some frames?!?
   _frameCount++;

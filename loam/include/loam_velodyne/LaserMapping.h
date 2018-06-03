@@ -39,6 +39,8 @@
 #include "loam_utils/IMUState.h"
 #include "loam/Parameters.h"
 
+#include <mutex>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
@@ -63,6 +65,10 @@ public:
 
   bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud);
 
+  void correctEstimate(const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(), 
+                       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
+
+  void resetEstimateValues();
 
   LaserMappingParams& params() {
     return _params;
@@ -90,6 +96,10 @@ public:
 
   Twist& transformSum() {
     return _transformSum;
+  }
+
+  Twist& transformTobeMapped() {
+    return _transformTobeMapped;
   }
 
   Twist& transformBefMapped() {
@@ -135,7 +145,7 @@ public:
 
 protected:
   /** \brief Reset flags, etc. */
-  void reset();
+  void resetFlags();
 
   /** \brief Check if all required information for a new processing step is available. */
   bool hasNewData();
@@ -157,6 +167,8 @@ private:
   }
 
   LaserMappingParams _params;
+
+  std::mutex main_thread_mutex_;
 
   long _frameCount;
   long _mapFrameCount;

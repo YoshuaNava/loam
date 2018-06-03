@@ -38,6 +38,8 @@
 #include "loam_utils/nanoflann_pcl.h"
 #include "loam/Parameters.h"
 
+#include <mutex>
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <tf/transform_datatypes.h>
@@ -61,6 +63,10 @@ public:
 
   bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud);
 
+  void correctEstimate(const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(), 
+                       const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
+
+  void resetEstimateValues();
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsSharp() {
     return _cornerPointsSharp;
@@ -92,6 +98,10 @@ public:
 
   LaserOdometryParams& params() {
     return _params;
+  }
+
+  Twist& transform() {
+    return _transform;
   }
 
   Twist& transformSum() {
@@ -180,7 +190,7 @@ public:
 
 protected:
   /** \brief Reset flags, etc. */
-  void reset();
+  void resetFlags();
 
   /** \brief Check if all required information for a new processing step is available. */
   bool hasNewData();
@@ -213,6 +223,8 @@ private:
 
   LaserOdometryParams _params;
 
+  std::mutex main_thread_mutex_;
+  
   bool _systemInited;      ///< initialization flag
   long _frameCount;        ///< number of processed frames
 

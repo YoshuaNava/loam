@@ -37,11 +37,13 @@
 #include <ros/node_handle.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
+#include <std_srvs/Empty.h>
 #include <tf/transform_broadcaster.h>
 
 #include "loam_utils/common.h"
 #include "loam_velodyne/TransformMaintenance.h"
 #include "common.h"
+#include "loam_msgs/PoseUpdate.h"
 
 namespace loam {
 
@@ -59,6 +61,12 @@ public:
    */
   virtual bool setup(ros::NodeHandle& node,
                      ros::NodeHandle& privateNode);
+
+  bool resetCallback(std_srvs::Empty::Request  &req,
+                     std_srvs::Empty::Response &res);
+
+  bool correctPoseCallback(loam_msgs::PoseUpdate::Request  &req,
+                           loam_msgs::PoseUpdate::Response &res);
 
   /** \brief Callback method for laser odometry messages.
    *
@@ -94,6 +102,9 @@ private:
 
   ros::Subscriber _subLaserOdometry;    ///< (high frequency) laser odometry subscriber
   ros::Subscriber _subOdomAftMapped;    ///< (low frequency) mapping odometry subscriber
+
+  ros::ServiceServer reset_service_;
+  ros::ServiceServer pose_correction_service_;
 };
 
 } // end namespace loam
