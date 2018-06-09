@@ -77,23 +77,23 @@ public:
   virtual void addImuData(IMUState newState);
 
 
-  pcl::PointCloud<pcl::PointXYZI>& laserCloud() {
+  pcl::PointCloud<pcl::PointXYZHSV>& laserCloud() {
     return _laserCloud;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>& cornerPointsSharp() {
+  pcl::PointCloud<pcl::PointXYZHSV>& cornerPointsSharp() {
     return _cornerPointsSharp;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>& cornerPointsLessSharp() {
+  pcl::PointCloud<pcl::PointXYZHSV>& cornerPointsLessSharp() {
     return _cornerPointsLessSharp;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>& surfacePointsFlat() {
+  pcl::PointCloud<pcl::PointXYZHSV>& surfacePointsFlat() {
     return _surfacePointsFlat;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>& surfacePointsLessFlat() {
+  pcl::PointCloud<pcl::PointXYZHSV>& surfacePointsLessFlat() {
     return _surfacePointsLessFlat;
   }
 
@@ -139,20 +139,19 @@ protected:
    *
    * @param point the point to project
    */
-  void transformToStartIMU(pcl::PointXYZI& point);
+  void transformToStartIMU(pcl::PointXYZHSV& point);
 
   /** \brief Extract features from current laser cloud.
    *
-   * @param beginIdx the index of the first scan to extract features from
    */
-  void extractFeatures(const uint16_t& beginIdx = 0);
+  void extractFeatures();
 
-  /** \brief Set up region buffers for the specified point range.
+  /** \brief Estimate curvature and sort points for the specified point range.
    *
    * @param startIdx the region start index
    * @param endIdx the region end index
    */
-  void setRegionBuffersFor(const size_t& startIdx,
+  void estimateCurvature(const size_t& startIdx,
                            const size_t& endIdx);
 
   /** \brief Set up scan buffers for the specified point range.
@@ -160,8 +159,8 @@ protected:
    * @param startIdx the scan start index
    * @param endIdx the scan start index
    */
-  void setScanBuffersFor(const size_t& startIdx,
-                         const size_t& endIdx);
+  void extractValidPoints(const size_t& startIdx,
+                          const size_t& endIdx);
 
   /** \brief Mark a point and its neighbors as picked.
    *
@@ -196,13 +195,13 @@ protected:
   size_t _imuIdx;                         ///< the current index in the IMU history
   CircularBuffer<IMUState> _imuHistory;   ///< history of IMU states for cloud registration
 
-  pcl::PointCloud<pcl::PointXYZI> _laserCloud;   ///< full resolution input cloud
+  pcl::PointCloud<pcl::PointXYZHSV> _laserCloud;   ///< full resolution input cloud
   std::vector<IndexRange> _scanIndices;          ///< start and end indices of the individual scans withing the full resolution cloud
 
-  pcl::PointCloud<pcl::PointXYZI> _cornerPointsSharp;      ///< sharp corner points cloud
-  pcl::PointCloud<pcl::PointXYZI> _cornerPointsLessSharp;  ///< less sharp corner points cloud
-  pcl::PointCloud<pcl::PointXYZI> _surfacePointsFlat;      ///< flat surface points cloud
-  pcl::PointCloud<pcl::PointXYZI> _surfacePointsLessFlat;  ///< less flat surface points cloud
+  pcl::PointCloud<pcl::PointXYZHSV> _cornerPointsSharp;      ///< sharp corner points cloud
+  pcl::PointCloud<pcl::PointXYZHSV> _cornerPointsLessSharp;  ///< less sharp corner points cloud
+  pcl::PointCloud<pcl::PointXYZHSV> _surfacePointsFlat;      ///< flat surface points cloud
+  pcl::PointCloud<pcl::PointXYZHSV> _surfacePointsLessFlat;  ///< less flat surface points cloud
   pcl::PointCloud<pcl::PointXYZ> _imuTrans;                ///< IMU transformation information
 
   std::vector<float> _regionCurvature;      ///< point curvature buffer

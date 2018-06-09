@@ -186,7 +186,7 @@ void publishResults()
 
 
   // publish transformed full resolution input cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZHSV>());
   if(laserOdometry->generateRegisteredCloud(registered_cloud)) {
 
     loam::publishCloudMsg(pubLaserCloudCornerLast, *laserOdometry->lastCornerCloud(), sweepTime, "/camera");

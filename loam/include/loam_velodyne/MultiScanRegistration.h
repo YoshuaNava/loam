@@ -113,6 +113,13 @@ public:
   void process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                const Time& scanTime);
 
+  /** \brief Extract features from current laser cloud.
+   *
+   * @param beginIdx the index of the first scan to extract features from
+   */
+  void extractFeatures(const uint16_t& beginIdx = 0);
+  
+
   int& systemDelay() {
     return _systemDelay;
   }

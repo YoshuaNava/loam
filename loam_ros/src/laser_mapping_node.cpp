@@ -151,13 +151,13 @@ void publishResults()
   // publish new map cloud according to the input output ratio
   if(pubLaserCloudSurround.getNumSubscribers()) {
 
-    pcl::PointCloud<pcl::PointXYZI>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::PointCloud<pcl::PointXYZHSV>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZHSV>());
     if(laserMapping->generateMapCloud(map_cloud))
       loam::publishCloudMsg(pubLaserCloudSurround, *map_cloud, ros::Time(timeLaserOdometry), "/camera_init");
   }
 
   // publish transformed full resolution input cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZHSV>());
   if(laserMapping->generateRegisteredCloud(registered_cloud))
     loam::publishCloudMsg(pubLaserCloudFullRes, *registered_cloud, ros::Time(timeLaserOdometry), "/camera_init");
 

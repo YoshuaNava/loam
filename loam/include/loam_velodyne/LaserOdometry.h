@@ -61,38 +61,38 @@ public:
   /** \brief Try to process buffered data. */
   bool process();
 
-  bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud);
+  bool generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZHSV>::Ptr& registered_cloud);
 
   void correctEstimate(const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(), 
                        const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
   void resetEstimateValues();
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsSharp() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cornerPointsSharp() {
     return _cornerPointsSharp;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& cornerPointsLessSharp() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cornerPointsLessSharp() {
     return _cornerPointsLessSharp;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsFlat() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& surfPointsFlat() {
     return _surfPointsFlat;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& surfPointsLessFlat() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& surfPointsLessFlat() {
     return _surfPointsLessFlat;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& laserCloudFullRes() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudFullRes() {
     return _laserCloudFullRes;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& lastCornerCloud() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& lastCornerCloud() {
     return _lastCornerCloud;
   }
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr& lastSurfaceCloud() {
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& lastSurfaceCloud() {
     return _lastSurfaceCloud;
   }
 
@@ -200,14 +200,14 @@ protected:
    * @param pi the point to transform
    * @param po the point instance for storing the result
    */
-  void transformToStart(const pcl::PointXYZI& pi,
-                        pcl::PointXYZI& po);
+  void transformToStart(const pcl::PointXYZHSV& pi,
+                        pcl::PointXYZHSV& po);
 
   /** \brief Transform the given point cloud to the end of the sweep.
    *
    * @param cloud the point cloud to transform
    */
-  size_t transformToEnd(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
+  size_t transformToEnd(pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cloud);
 
   void pluginIMURotation(const Angle& bcx, const Angle& bcy, const Angle& bcz,
                          const Angle& blx, const Angle& bly, const Angle& blz,
@@ -242,20 +242,20 @@ private:
   bool _newLaserCloudFullRes;       ///< flag if a new full resolution cloud has been received
   bool _newImuTrans;                ///< flag if a new IMU transformation information cloud has been received
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _cornerPointsSharp;      ///< sharp corner points cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _cornerPointsLessSharp;  ///< less sharp corner points cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _surfPointsFlat;         ///< flat surface points cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _surfPointsLessFlat;     ///< less flat surface points cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloudFullRes;             ///< full resolution cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _cornerPointsSharp;      ///< sharp corner points cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _cornerPointsLessSharp;  ///< less sharp corner points cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _surfPointsFlat;         ///< flat surface points cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _surfPointsLessFlat;     ///< less flat surface points cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _laserCloudFullRes;             ///< full resolution cloud
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _lastCornerCloud;    ///< last corner points cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _lastSurfaceCloud;   ///< last surface points cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _lastCornerCloud;    ///< last corner points cloud
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _lastSurfaceCloud;   ///< last surface points cloud
 
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _laserCloudOri;      ///< point selection
-  pcl::PointCloud<pcl::PointXYZI>::Ptr _coeffSel;           ///< point selection coefficients
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _laserCloudOri;      ///< point selection
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr _coeffSel;           ///< point selection coefficients
 
-  nanoflann::KdTreeFLANN<pcl::PointXYZI> _lastCornerKDTree;   ///< last corner cloud KD-tree
-  nanoflann::KdTreeFLANN<pcl::PointXYZI> _lastSurfaceKDTree;  ///< last surface cloud KD-tree
+  nanoflann::KdTreeFLANN<pcl::PointXYZHSV> _lastCornerKDTree;   ///< last corner cloud KD-tree
+  nanoflann::KdTreeFLANN<pcl::PointXYZHSV> _lastSurfaceKDTree;  ///< last surface cloud KD-tree
 
   std::vector<int> _pointSearchCornerInd1;    ///< first corner point search index buffer
   std::vector<int> _pointSearchCornerInd2;    ///< second corner point search index buffer

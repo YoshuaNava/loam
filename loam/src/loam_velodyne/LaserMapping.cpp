@@ -63,17 +63,17 @@ LaserMapping::LaserMapping(const LaserMappingParams& params)
         _newLaserCloudSurfLast(false),
         _newLaserCloudFullRes(false),
         _newLaserOdometry(false),
-        _laserCloudCornerLast(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurfLast(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudCornerStack(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurfStack(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudCornerStackDS(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurfStackDS(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurround(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurroundDS(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudCornerFromMap(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudSurfFromMap(new pcl::PointCloud<pcl::PointXYZI>())
+        _laserCloudCornerLast(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudSurfLast(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudCornerStack(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudSurfStack(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudCornerStackDS(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudSurfStackDS(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudSurround(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudSurroundDS(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudCornerFromMap(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudSurfFromMap(new pcl::PointCloud<pcl::PointXYZHSV>())
 {
   // initialize frame counter
   _frameCount = _params.stackFrameNum - 1;
@@ -86,10 +86,10 @@ LaserMapping::LaserMapping(const LaserMappingParams& params)
   _laserCloudSurfDSArray.resize(_params.laserCloudNum);
 
   for (size_t i = 0; i < _params.laserCloudNum; i++) {
-    _laserCloudCornerArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
-    _laserCloudSurfArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
-    _laserCloudCornerDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
-    _laserCloudSurfDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
+    _laserCloudCornerArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+    _laserCloudSurfArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+    _laserCloudCornerDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+    _laserCloudSurfDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
   }
 
   // setup down size filters
@@ -131,10 +131,10 @@ void LaserMapping::resetEstimateValues() {
   _laserCloudSurfDSArray.resize(_params.laserCloudNum);
 
   for (size_t i = 0; i < _params.laserCloudNum; i++) {
-    _laserCloudCornerArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
-    _laserCloudSurfArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
-    _laserCloudCornerDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
-    _laserCloudSurfDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZI>());
+    _laserCloudCornerArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+    _laserCloudSurfArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+    _laserCloudCornerDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+    _laserCloudSurfDSArray[i].reset(new pcl::PointCloud<pcl::PointXYZHSV>());
   }
 }
 
@@ -237,12 +237,12 @@ void LaserMapping::transformUpdate()
 
 
 
-void LaserMapping::pointAssociateToMap(const pcl::PointXYZI& pi, pcl::PointXYZI& po)
+void LaserMapping::pointAssociateToMap(const pcl::PointXYZHSV& pi, pcl::PointXYZHSV& po)
 {
   po.x = pi.x;
   po.y = pi.y;
   po.z = pi.z;
-  po.intensity = pi.intensity;
+  po.h = pi.h;
 
   rotateZXY(po, _transformTobeMapped.rot_z, _transformTobeMapped.rot_x, _transformTobeMapped.rot_y);
 
@@ -253,12 +253,12 @@ void LaserMapping::pointAssociateToMap(const pcl::PointXYZI& pi, pcl::PointXYZI&
 
 
 
-void LaserMapping::pointAssociateTobeMapped(const pcl::PointXYZI& pi, pcl::PointXYZI& po)
+void LaserMapping::pointAssociateTobeMapped(const pcl::PointXYZHSV& pi, pcl::PointXYZHSV& po)
 {
   po.x = pi.x - _transformTobeMapped.pos.x();
   po.y = pi.y - _transformTobeMapped.pos.y();
   po.z = pi.z - _transformTobeMapped.pos.z();
-  po.intensity = pi.intensity;
+  po.h = pi.h;
 
   rotateYXZ(po, -_transformTobeMapped.rot_y, -_transformTobeMapped.rot_x, -_transformTobeMapped.rot_z);
 }
@@ -322,7 +322,7 @@ bool LaserMapping::process()
   }
   _frameCount = 0;
 
-  pcl::PointXYZI pointSel;
+  pcl::PointXYZHSV pointSel;
 
   // relate incoming data to map
   transformAssociateToMap();
@@ -340,7 +340,7 @@ bool LaserMapping::process()
   }
 
 
-  pcl::PointXYZI pointOnYAxis;
+  pcl::PointXYZHSV pointOnYAxis;
   pointOnYAxis.x = 0.0;
   pointOnYAxis.y = 10.0;
   pointOnYAxis.z = 0.0;
@@ -457,13 +457,13 @@ bool LaserMapping::process()
           float centerY = 50.0f * (j - _laserCloudCenHeight);
           float centerZ = 50.0f * (k - _laserCloudCenDepth);
 
-          pcl::PointXYZI transform_pos = (pcl::PointXYZI) _transformTobeMapped.pos;
+          pcl::PointXYZHSV transform_pos = (pcl::PointXYZHSV) _transformTobeMapped.pos;
 
           bool isInLaserFOV = false;
           for (int ii = -1; ii <= 1; ii += 2) {
             for (int jj = -1; jj <= 1; jj += 2) {
               for (int kk = -1; kk <= 1; kk += 2) {
-                pcl::PointXYZI corner;
+                pcl::PointXYZHSV corner;
                 corner.x = centerX + 25.0f * ii;
                 corner.y = centerY + 25.0f * jj;
                 corner.z = centerZ + 25.0f * kk;
@@ -604,13 +604,13 @@ void LaserMapping::optimizeTransformTobeMapped()
 
   bool isConverged = false;
 
-  pcl::PointXYZI pointSel, pointOri, pointProj, coeff;
+  pcl::PointXYZHSV pointSel, pointOri, pointProj, coeff;
 
   std::vector<int> pointSearchInd(5, 0);
   std::vector<float> pointSearchSqDis(5, 0);
 
-  nanoflann::KdTreeFLANN<pcl::PointXYZI> kdtreeCornerFromMap;
-  nanoflann::KdTreeFLANN<pcl::PointXYZI> kdtreeSurfFromMap;
+  nanoflann::KdTreeFLANN<pcl::PointXYZHSV> kdtreeCornerFromMap;
+  nanoflann::KdTreeFLANN<pcl::PointXYZHSV> kdtreeSurfFromMap;
 
   kdtreeCornerFromMap.setInputCloud(_laserCloudCornerFromMap);
   kdtreeSurfFromMap.setInputCloud(_laserCloudSurfFromMap);
@@ -636,8 +636,8 @@ void LaserMapping::optimizeTransformTobeMapped()
   size_t laserCloudCornerStackNum = _laserCloudCornerStackDS->points.size();
   size_t laserCloudSurfStackNum = _laserCloudSurfStackDS->points.size();
 
-  pcl::PointCloud<pcl::PointXYZI> laserCloudOri;
-  pcl::PointCloud<pcl::PointXYZI> coeffSel;
+  pcl::PointCloud<pcl::PointXYZHSV> laserCloudOri;
+  pcl::PointCloud<pcl::PointXYZHSV> coeffSel;
 
   // start iterating
   for (size_t iterCount = 0; iterCount < _params.maxIterations; iterCount++) {
@@ -720,7 +720,7 @@ void LaserMapping::optimizeTransformTobeMapped()
           coeff.x = s * la;
           coeff.y = s * lb;
           coeff.z = s * lc;
-          coeff.intensity = s * ld2;
+          coeff.h = s * ld2;
 
           if (s > 0.1) {
             laserCloudOri.push_back(pointOri);
@@ -779,7 +779,7 @@ void LaserMapping::optimizeTransformTobeMapped()
           coeff.x = s * pa;
           coeff.y = s * pb;
           coeff.z = s * pc;
-          coeff.intensity = s * pd2;
+          coeff.h = s * pd2;
 
           if (s > 0.1) {
             laserCloudOri.push_back(pointOri);
@@ -833,7 +833,7 @@ void LaserMapping::optimizeTransformTobeMapped()
       matA(i, 3) = coeff.x;
       matA(i, 4) = coeff.y;
       matA(i, 5) = coeff.z;
-      matB(i, 0) = -coeff.intensity;
+      matB(i, 0) = -coeff.h;
     }
 
     matAt = matA.transpose();
@@ -900,7 +900,7 @@ void LaserMapping::optimizeTransformTobeMapped()
   transformUpdate();
 }
 
-bool LaserMapping::generateMapCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& map_cloud) {
+bool LaserMapping::generateMapCloud(pcl::PointCloud<pcl::PointXYZHSV>::Ptr& map_cloud) {
   _mapFrameCount++;
   if (_mapFrameCount >= _params.mapFrameNum || _params.mapFrameNum < 0) {
     _mapFrameCount = 0;
@@ -927,7 +927,7 @@ bool LaserMapping::generateMapCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& map_cl
   return false;
 }
 
-bool LaserMapping::generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud) {
+bool LaserMapping::generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZHSV>::Ptr& registered_cloud) {
 // transform full resolution input cloud to map
   size_t laserCloudFullResNum = _laserCloudFullRes->points.size();
   for (size_t i = 0; i < laserCloudFullResNum; i++) {

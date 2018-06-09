@@ -100,8 +100,8 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
   }
 
   bool halfPassed = false;
-  pcl::PointXYZI point;
-  std::vector<pcl::PointCloud<pcl::PointXYZI> > laserCloudScans(_scanMapper.getNumberOfScanRings());
+  pcl::PointXYZHSV point;
+  std::vector<pcl::PointCloud<pcl::PointXYZHSV> > laserCloudScans(_scanMapper.getNumberOfScanRings());
 
   // extract valid points from input cloud
   for (size_t i = 0; i < cloudSize; i++) {
@@ -152,7 +152,7 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
 
     // calculate relative scan time based on point orientation
     float relTime = _params.scanPeriod * (ori - startOri) / (endOri - startOri);
-    point.intensity = scanID + relTime;
+    point.h = scanID + relTime;
 
     // project point to the start of the sweep using corresponding IMU data
     if (hasIMUData()) {
@@ -179,6 +179,101 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
 
   // publish result
   // publishResult();
+}
+
+void MultiScanRegistration::extractFeatures(const uint16_t& beginIdx)
+{
+  // extract features from individual scans
+  size_t nScans = _scanIndices.size();
+  for (size_t i = beginIdx; i < nScans; i++) {
+    pcl::PointCloud<pcl::PointXYZHSV>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<pcl::PointXYZHSV>);
+    size_t scanStartIdx = _scanIndices[i].first;
+    size_t scanEndIdx = _scanIndices[i].second;
+
+    // skip empty scans
+    if (scanEndIdx <= scanStartIdx + 2 * _params.curvatureRegion) {
+      continue;
+    }
+
+    // reset scan buffers
+    extractValidPoints(scanStartIdx, scanEndIdx);
+
+    // extract features from equally sized scan regions
+    for (size_t j = 0; j < _params.nFeatureRegions; j++) {
+      size_t sp = ((scanStartIdx + _params.curvatureRegion) * (_params.nFeatureRegions - j)
+                   + (scanEndIdx - _params.curvatureRegion) * j) / _params.nFeatureRegions;
+      size_t ep = ((scanStartIdx + _params.curvatureRegion) * (_params.nFeatureRegions - 1 - j)
+                   + (scanEndIdx - _params.curvatureRegion) * (j + 1)) / _params.nFeatureRegions - 1;
+
+      // skip empty regions
+      if (ep <= sp) {
+        continue;
+      }
+
+      size_t regionSize = ep - sp + 1;
+
+      // reset region buffers and estimate curvature
+      estimateCurvature(sp, ep);
+
+
+      // extract corner features
+      size_t largestPickedNum = 0;
+      for (size_t k = regionSize; k > 0 && largestPickedNum < _params.maxCornerLessSharp;) {
+        size_t idx = _regionSortIndices[--k];
+        size_t scanIdx = idx - scanStartIdx;
+        size_t regionIdx = idx - sp;
+
+        if (_scanNeighborPicked[scanIdx] == 0 &&
+            _regionCurvature[regionIdx] > _params.surfaceCurvatureThreshold) {
+
+          largestPickedNum++;
+          if (largestPickedNum <= _params.maxCornerSharp) {
+            _regionLabel[regionIdx] = CORNER_SHARP;
+            _cornerPointsSharp.push_back(_laserCloud[idx]);
+          } else {
+            _regionLabel[regionIdx] = CORNER_LESS_SHARP;
+          }
+          _cornerPointsLessSharp.push_back(_laserCloud[idx]);
+
+          markAsPicked(idx, scanIdx);
+        }
+      }
+
+      // extract flat surface features
+      size_t smallestPickedNum = 0;
+      for (size_t k = 0; k < regionSize && smallestPickedNum < (size_t)_params.maxSurfaceFlat; k++) {
+        size_t idx = _regionSortIndices[k];
+        size_t scanIdx = idx - scanStartIdx;
+        size_t regionIdx = idx - sp;
+
+        if (_scanNeighborPicked[scanIdx] == 0 &&
+            _regionCurvature[regionIdx] < _params.surfaceCurvatureThreshold) {
+
+          smallestPickedNum++;
+          _regionLabel[regionIdx] = SURFACE_FLAT;
+          _surfacePointsFlat.push_back(_laserCloud[idx]);
+
+          markAsPicked(idx, scanIdx);
+        }
+      }
+
+      // extract less flat surface features
+      for (size_t k = 0; k < regionSize; k++) {
+        if (_regionLabel[k] <= SURFACE_LESS_FLAT) {
+          surfPointsLessFlatScan->push_back(_laserCloud[sp + k]);
+        }
+      }
+    }
+
+    // down size less flat surface point cloud of current scan
+    pcl::PointCloud<pcl::PointXYZHSV> surfPointsLessFlatScanDS;
+    pcl::VoxelGrid<pcl::PointXYZHSV> downSizeFilter;
+    downSizeFilter.setInputCloud(surfPointsLessFlatScan);
+    downSizeFilter.setLeafSize(_params.lessFlatFilterSize, _params.lessFlatFilterSize, _params.lessFlatFilterSize);
+    downSizeFilter.filter(surfPointsLessFlatScanDS);
+
+    _surfacePointsLessFlat += surfPointsLessFlatScanDS;
+  }
 }
 
 } // end namespace loam

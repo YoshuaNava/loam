@@ -25,6 +25,9 @@ public:
   Vector3(const pcl::PointXYZI &p)
       : Eigen::Vector4f(p.x, p.y, p.z, 0) {}
 
+    Vector3(const pcl::PointXYZHSV &p)
+      : Eigen::Vector4f(p.x, p.y, p.z, 0) {}
+
   template<typename OtherDerived>
   Vector3 &operator=(const Eigen::MatrixBase <OtherDerived> &rhs) {
     this->Eigen::Vector4f::operator=(rhs);
@@ -66,6 +69,18 @@ public:
     dst.intensity = 0;
     return dst;
   }
+
+  operator pcl::PointXYZHSV() {
+    pcl::PointXYZHSV dst;
+    dst.x = x();
+    dst.y = y();
+    dst.z = z();
+    dst.h = 0;
+    dst.s = 0;
+    dst.v = 0;
+    return dst;
+  }
+
 };
 
 } // end namespace loam

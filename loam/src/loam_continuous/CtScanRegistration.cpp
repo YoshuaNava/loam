@@ -129,15 +129,16 @@ void CtScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserClou
   // reset internal buffers and set IMU start state based on current scan time
   reset(scanTime, newSweep);
 
-  pcl::PointXYZI point;
-  pcl::PointCloud<pcl::PointXYZI> laserCloudScan;
+  pcl::PointXYZHSV point;
+  pcl::PointCloud<pcl::PointXYZHSV> laserCloudScan;
 
   // extract valid points from input cloud
-  for (int i = 0; i < cloudSize; i++) {
+  for (size_t i = 0; i < cloudSize; i++) {
     point.x = laserCloudIn[i].y;
     point.y = laserCloudIn[i].z;
     point.z = laserCloudIn[i].x;
-    point.intensity = scanTime - _sweepStart;
+    point.h = scanTime - _sweepStart;
+    point.v = 0;
 
     // skip NaN and INF valued points
     if (!pcl_isfinite(point.x) ||
@@ -177,19 +178,19 @@ void CtScanRegistration::extractFeatures()
 {
   size_t cloudSize = _laserCloud.size();
   size_t startPoints[4] = {5,
-                           6 + int((cloudSize - 10) / 4.0),
-                           6 + int((cloudSize - 10) / 2.0),
-                           6 + int(3 * (cloudSize - 10) / 4.0)};
-  size_t endPoints[4] = {5 + int((cloudSize - 10) / 4.0),
-                         5 + int((cloudSize - 10) / 2.0),
-                         5 + int(3 * (cloudSize - 10) / 4.0),
+                           6 + size_t((cloudSize - 10) / 4.0),
+                           6 + size_t((cloudSize - 10) / 2.0),
+                           6 + size_t(3 * (cloudSize - 10) / 4.0)};
+  size_t endPoints[4] = {5 + size_t((cloudSize - 10) / 4.0),
+                         5 + size_t((cloudSize - 10) / 2.0),
+                         5 + size_t(3 * (cloudSize - 10) / 4.0),
                          cloudSize - 6};
 
   // extract features from individual scans
-  pcl::PointCloud<pcl::PointXYZI>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<pcl::PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<pcl::PointXYZHSV>);
 
   // reset scan buffers. Exclude invalid points
-  setScanBuffersFor(0, cloudSize);
+  extractValidPoints(0, cloudSize);
 
   // extract features from equally sized scan regions
   for (size_t i = 0; i < _params.nFeatureRegions; i++) {
@@ -198,10 +199,10 @@ void CtScanRegistration::extractFeatures()
     size_t regionSize = ep - sp;
 
     // reset region buffers
-    setRegionBuffersFor(sp, ep-1);
+    estimateCurvature(sp, ep-1);
 
     // extract corner features
-    int largestPickedNum = 0;
+    size_t largestPickedNum = 0;
     for (size_t j = regionSize-1; j > 0 && largestPickedNum < _params.maxCornerLessSharp; j--) {
       size_t scanIdx = _regionSortIndices[j];
       size_t regionIdx = scanIdx - sp;
@@ -226,7 +227,7 @@ void CtScanRegistration::extractFeatures()
     }
 
     // extract flat surface features
-    int smallestPickedNum = 0;
+    size_t smallestPickedNum = 0;
     for (size_t j = 0; j < regionSize && smallestPickedNum < _params.maxSurfaceFlat; j++) {
       size_t scanIdx = _regionSortIndices[j];
       size_t regionIdx = scanIdx - sp;
@@ -251,8 +252,8 @@ void CtScanRegistration::extractFeatures()
   }
 
   // down size less flat surface point cloud of current scan
-  pcl::PointCloud<pcl::PointXYZI> surfPointsLessFlatScanDS;
-  pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
+  pcl::PointCloud<pcl::PointXYZHSV> surfPointsLessFlatScanDS;
+  pcl::VoxelGrid<pcl::PointXYZHSV> downSizeFilter;
   downSizeFilter.setInputCloud(surfPointsLessFlatScan);
   downSizeFilter.setLeafSize(_params.lessFlatFilterSize, _params.lessFlatFilterSize, _params.lessFlatFilterSize);
   downSizeFilter.filter(surfPointsLessFlatScanDS);

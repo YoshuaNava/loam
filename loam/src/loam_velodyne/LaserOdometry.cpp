@@ -66,15 +66,15 @@ LaserOdometry::LaserOdometry(const LaserOdometryParams& params)
         _newSurfPointsLessFlat(false),
         _newLaserCloudFullRes(false),
         _newImuTrans(false),
-        _cornerPointsSharp(new pcl::PointCloud<pcl::PointXYZI>()),
-        _cornerPointsLessSharp(new pcl::PointCloud<pcl::PointXYZI>()),
-        _surfPointsFlat(new pcl::PointCloud<pcl::PointXYZI>()),
-        _surfPointsLessFlat(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZI>()),
-        _lastCornerCloud(new pcl::PointCloud<pcl::PointXYZI>()),
-        _lastSurfaceCloud(new pcl::PointCloud<pcl::PointXYZI>()),
-        _laserCloudOri(new pcl::PointCloud<pcl::PointXYZI>()),
-        _coeffSel(new pcl::PointCloud<pcl::PointXYZI>())
+        _cornerPointsSharp(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _cornerPointsLessSharp(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _surfPointsFlat(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _surfPointsLessFlat(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudFullRes(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _lastCornerCloud(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _lastSurfaceCloud(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _laserCloudOri(new pcl::PointCloud<pcl::PointXYZHSV>()),
+        _coeffSel(new pcl::PointCloud<pcl::PointXYZHSV>())
 { }
 
 void LaserOdometry::correctEstimate(const Eigen::Vector3d& pos, const Eigen::Vector3d& rpy) {
@@ -104,19 +104,19 @@ void LaserOdometry::resetEstimateValues() {
   // _imuYawEnd = Angle();
   // _imuShiftFromStart = Vector3();
   // _imuShiftFromStart = Vector3();
-  // _lastCornerCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
-  // _lastSurfaceCloud.reset(new pcl::PointCloud<pcl::PointXYZI>());
+  // _lastCornerCloud.reset(new pcl::PointCloud<pcl::PointXYZHSV>());
+  // _lastSurfaceCloud.reset(new pcl::PointCloud<pcl::PointXYZHSV>());
 }
 
-void LaserOdometry::transformToStart(const pcl::PointXYZI& pi, pcl::PointXYZI& po)
+void LaserOdometry::transformToStart(const pcl::PointXYZHSV& pi, pcl::PointXYZHSV& po)
 {
   // first translate, then rotate based on registered scan time
-  float s = 10 * (pi.intensity - int(pi.intensity));
+  float s = 10 * (pi.h - int(pi.h));
 
   po.x = pi.x - s * _transform.pos.x();
   po.y = pi.y - s * _transform.pos.y();
   po.z = pi.z - s * _transform.pos.z();
-  po.intensity = pi.intensity;
+  po.h = pi.h;
 
   Angle rx = -s * _transform.rot_x.rad();
   Angle ry = -s * _transform.rot_y.rad();
@@ -126,20 +126,20 @@ void LaserOdometry::transformToStart(const pcl::PointXYZI& pi, pcl::PointXYZI& p
 
 
 
-size_t LaserOdometry::transformToEnd(pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud)
+size_t LaserOdometry::transformToEnd(pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cloud)
 {
   size_t cloudSize = cloud->points.size();
 
   for (size_t i = 0; i < cloudSize; i++) {
-    pcl::PointXYZI& point = cloud->points[i];
+    pcl::PointXYZHSV& point = cloud->points[i];
 
-    float s = 10 * (point.intensity - int(point.intensity));
+    float s = 10 * (point.h - int(point.h));
 
     // rotate to start
     point.x -= s * _transform.pos.x();
     point.y -= s * _transform.pos.y();
     point.z -= s * _transform.pos.z();
-    point.intensity = int(point.intensity);
+    point.h = int(point.h);
 
     Angle rx = -s * _transform.rot_x.rad();
     Angle ry = -s * _transform.rot_y.rad();
@@ -339,7 +339,7 @@ bool LaserOdometry::process()
     return false;
   }
 
-  pcl::PointXYZI coeff;
+  pcl::PointXYZHSV coeff;
   bool isDegenerate = false;
   Eigen::Matrix<float,6,6> matP;
 
@@ -367,7 +367,7 @@ bool LaserOdometry::process()
     _pointSearchSurfInd3.resize(surfPointsFlatNum);
 
     for (size_t iterCount = 0; iterCount < _params.maxIterations; iterCount++) {
-      pcl::PointXYZI pointSel, pointProj, tripod1, tripod2, tripod3;
+      pcl::PointXYZHSV pointSel, pointProj, tripod1, tripod2, tripod3;
       _laserCloudOri->clear();
       _coeffSel->clear();
 
@@ -381,17 +381,17 @@ bool LaserOdometry::process()
           int closestPointInd = -1, minPointInd2 = -1;
           if (pointSearchSqDis[0] < 25) {
             closestPointInd = pointSearchInd[0];
-            int closestPointScan = int(_lastCornerCloud->points[closestPointInd].intensity);
+            int closestPointScan = int(_lastCornerCloud->points[closestPointInd].h);
 
             float pointSqDis, minPointSqDis2 = 25;
             for (size_t j = closestPointInd + 1; j < cornerPointsSharpNum; j++) {
-              if (size_t(_lastCornerCloud->points[j].intensity) > closestPointScan + 2.5) {
+              if (size_t(_lastCornerCloud->points[j].h) > closestPointScan + 2.5) {
                 break;
               }
 
               pointSqDis = calcSquaredDiff(_lastCornerCloud->points[j], pointSel);
 
-              if (int(_lastCornerCloud->points[j].intensity) > closestPointScan) {
+              if (int(_lastCornerCloud->points[j].h) > closestPointScan) {
                 if (pointSqDis < minPointSqDis2) {
                   minPointSqDis2 = pointSqDis;
                   minPointInd2 = j;
@@ -399,13 +399,13 @@ bool LaserOdometry::process()
               }
             }
             for (int j = closestPointInd - 1; j >= 0; j--) {
-              if (int(_lastCornerCloud->points[j].intensity) < closestPointScan - 2.5) {
+              if (int(_lastCornerCloud->points[j].h) < closestPointScan - 2.5) {
                 break;
               }
 
               pointSqDis = calcSquaredDiff(_lastCornerCloud->points[j], pointSel);
 
-              if (int(_lastCornerCloud->points[j].intensity) < closestPointScan) {
+              if (int(_lastCornerCloud->points[j].h) < closestPointScan) {
                 if (pointSqDis < minPointSqDis2) {
                   minPointSqDis2 = pointSqDis;
                   minPointInd2 = j;
@@ -466,7 +466,7 @@ bool LaserOdometry::process()
           coeff.x = s * la;
           coeff.y = s * lb;
           coeff.z = s * lc;
-          coeff.intensity = s * ld2;
+          coeff.h = s * ld2;
 
           if (s > 0.1 && ld2 != 0) {
             _laserCloudOri->push_back(_cornerPointsSharp->points[i]);
@@ -483,17 +483,17 @@ bool LaserOdometry::process()
           int closestPointInd = -1, minPointInd2 = -1, minPointInd3 = -1;
           if (pointSearchSqDis[0] < 25) {
             closestPointInd = pointSearchInd[0];
-            int closestPointScan = int(_lastSurfaceCloud->points[closestPointInd].intensity);
+            int closestPointScan = int(_lastSurfaceCloud->points[closestPointInd].h);
 
             float pointSqDis, minPointSqDis2 = 25, minPointSqDis3 = 25;
             for (size_t j = closestPointInd + 1; j < surfPointsFlatNum; j++) {
-              if (int(_lastSurfaceCloud->points[j].intensity) > closestPointScan + 2.5) {
+              if (int(_lastSurfaceCloud->points[j].h) > closestPointScan + 2.5) {
                 break;
               }
 
               pointSqDis = calcSquaredDiff(_lastSurfaceCloud->points[j], pointSel);
 
-              if (int(_lastSurfaceCloud->points[j].intensity) <= closestPointScan) {
+              if (int(_lastSurfaceCloud->points[j].h) <= closestPointScan) {
                 if (pointSqDis < minPointSqDis2) {
                   minPointSqDis2 = pointSqDis;
                   minPointInd2 = j;
@@ -506,13 +506,13 @@ bool LaserOdometry::process()
               }
             }
             for (int j = closestPointInd - 1; j >= 0; j--) {
-              if (int(_lastSurfaceCloud->points[j].intensity) < closestPointScan - 2.5) {
+              if (int(_lastSurfaceCloud->points[j].h) < closestPointScan - 2.5) {
                 break;
               }
 
               pointSqDis = calcSquaredDiff(_lastSurfaceCloud->points[j], pointSel);
 
-              if (int(_lastSurfaceCloud->points[j].intensity) >= closestPointScan) {
+              if (int(_lastSurfaceCloud->points[j].h) >= closestPointScan) {
                 if (pointSqDis < minPointSqDis2) {
                   minPointSqDis2 = pointSqDis;
                   minPointInd2 = j;
@@ -566,7 +566,7 @@ bool LaserOdometry::process()
           coeff.x = s * pa;
           coeff.y = s * pb;
           coeff.z = s * pc;
-          coeff.intensity = s * pd2;
+          coeff.h = s * pd2;
 
           if (s > 0.1 && pd2 != 0) {
             _laserCloudOri->push_back(_surfPointsFlat->points[i]);
@@ -588,7 +588,7 @@ bool LaserOdometry::process()
       Eigen::Matrix<float,6,1> matX;
 
       for (size_t i = 0; i < pointSelNum; i++) {
-        const pcl::PointXYZI& pointOri = _laserCloudOri->points[i];
+        const pcl::PointXYZHSV& pointOri = _laserCloudOri->points[i];
         coeff = _coeffSel->points[i];
 
         float s = 1;
@@ -692,7 +692,7 @@ bool LaserOdometry::process()
            atz = -s * coeff.z;
       	}
 
-        float d2 = coeff.intensity;
+        float d2 = coeff.h;
 
         matA(i, 0) = arx;
         matA(i, 1) = ary;
@@ -822,7 +822,7 @@ bool LaserOdometry::process()
   return true;
 }
 
-bool LaserOdometry::generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr& registered_cloud) {
+bool LaserOdometry::generateRegisteredCloud(pcl::PointCloud<pcl::PointXYZHSV>::Ptr& registered_cloud) {
   // transform full resolution input cloud to end
   if (_params.ioRatio < 2 || _frameCount % _params.ioRatio == 1) {
     transformToEnd(_laserCloudFullRes);  // transform full resolution cloud to sweep end before sending it

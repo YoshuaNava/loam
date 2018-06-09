@@ -119,7 +119,7 @@ void ScanRegistration::setIMUTransformFor(const float& relTime)
 
 
 
-void ScanRegistration::transformToStartIMU(pcl::PointXYZI& point)
+void ScanRegistration::transformToStartIMU(pcl::PointXYZHSV& point)
 {
   // rotate point to global IMU system
   rotateZXY(point, _imuCur.roll, _imuCur.pitch, _imuCur.yaw);
@@ -153,106 +153,8 @@ void ScanRegistration::interpolateIMUStateFor(const float &relTime,
 }
 
 
-
-void ScanRegistration::extractFeatures(const uint16_t& beginIdx)
-{
-  // extract features from individual scans
-  size_t nScans = _scanIndices.size();
-  for (size_t i = beginIdx; i < nScans; i++) {
-    pcl::PointCloud<pcl::PointXYZI>::Ptr surfPointsLessFlatScan(new pcl::PointCloud<pcl::PointXYZI>);
-    size_t scanStartIdx = _scanIndices[i].first;
-    size_t scanEndIdx = _scanIndices[i].second;
-
-    // skip empty scans
-    if (scanEndIdx <= scanStartIdx + 2 * _params.curvatureRegion) {
-      continue;
-    }
-
-    // reset scan buffers
-    setScanBuffersFor(scanStartIdx, scanEndIdx);
-
-    // extract features from equally sized scan regions
-    for (int j = 0; j < _params.nFeatureRegions; j++) {
-      size_t sp = ((scanStartIdx + _params.curvatureRegion) * (_params.nFeatureRegions - j)
-                   + (scanEndIdx - _params.curvatureRegion) * j) / _params.nFeatureRegions;
-      size_t ep = ((scanStartIdx + _params.curvatureRegion) * (_params.nFeatureRegions - 1 - j)
-                   + (scanEndIdx - _params.curvatureRegion) * (j + 1)) / _params.nFeatureRegions - 1;
-
-      // skip empty regions
-      if (ep <= sp) {
-        continue;
-      }
-
-      size_t regionSize = ep - sp + 1;
-
-      // reset region buffers
-      setRegionBuffersFor(sp, ep);
-
-
-      // extract corner features
-      int largestPickedNum = 0;
-      for (size_t k = regionSize; k > 0 && largestPickedNum < _params.maxCornerLessSharp;) {
-        size_t idx = _regionSortIndices[--k];
-        size_t scanIdx = idx - scanStartIdx;
-        size_t regionIdx = idx - sp;
-
-        if (_scanNeighborPicked[scanIdx] == 0 &&
-            _regionCurvature[regionIdx] > _params.surfaceCurvatureThreshold) {
-
-          largestPickedNum++;
-          if (largestPickedNum <= _params.maxCornerSharp) {
-            _regionLabel[regionIdx] = CORNER_SHARP;
-            _cornerPointsSharp.push_back(_laserCloud[idx]);
-          } else {
-            _regionLabel[regionIdx] = CORNER_LESS_SHARP;
-          }
-          _cornerPointsLessSharp.push_back(_laserCloud[idx]);
-
-          markAsPicked(idx, scanIdx);
-        }
-      }
-
-      // extract flat surface features
-      size_t smallestPickedNum = 0;
-      for (size_t k = 0; k < regionSize && smallestPickedNum < (size_t)_params.maxSurfaceFlat; k++) {
-        size_t idx = _regionSortIndices[k];
-        size_t scanIdx = idx - scanStartIdx;
-        size_t regionIdx = idx - sp;
-
-        if (_scanNeighborPicked[scanIdx] == 0 &&
-            _regionCurvature[regionIdx] < _params.surfaceCurvatureThreshold) {
-
-          smallestPickedNum++;
-          _regionLabel[regionIdx] = SURFACE_FLAT;
-          _surfacePointsFlat.push_back(_laserCloud[idx]);
-
-          markAsPicked(idx, scanIdx);
-        }
-      }
-
-      // extract less flat surface features
-      for (size_t k = 0; k < regionSize; k++) {
-        if (_regionLabel[k] <= SURFACE_LESS_FLAT) {
-          surfPointsLessFlatScan->push_back(_laserCloud[sp + k]);
-        }
-      }
-    }
-
-    // down size less flat surface point cloud of current scan
-    pcl::PointCloud<pcl::PointXYZI> surfPointsLessFlatScanDS;
-    pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
-    downSizeFilter.setInputCloud(surfPointsLessFlatScan);
-    downSizeFilter.setLeafSize(_params.lessFlatFilterSize, _params.lessFlatFilterSize, _params.lessFlatFilterSize);
-    downSizeFilter.filter(surfPointsLessFlatScanDS);
-
-    _surfacePointsLessFlat += surfPointsLessFlatScanDS;
-  }
-}
-
-
-
-void ScanRegistration::setRegionBuffersFor(const size_t& startIdx,
-                                           const size_t& endIdx)
+void ScanRegistration::estimateCurvature(const size_t& startIdx,
+                                         const size_t& endIdx)
 {
   // resize buffers
   size_t regionSize = endIdx - startIdx + 1;
@@ -290,7 +192,7 @@ void ScanRegistration::setRegionBuffersFor(const size_t& startIdx,
 
 
 
-void ScanRegistration::setScanBuffersFor(const size_t& startIdx,
+void ScanRegistration::extractValidPoints(const size_t& startIdx,
                                          const size_t& endIdx)
 {
   // resize buffers
@@ -299,9 +201,9 @@ void ScanRegistration::setScanBuffersFor(const size_t& startIdx,
 
   // mark unreliable points as picked
   for (size_t i = startIdx + _params.curvatureRegion; i < endIdx - _params.curvatureRegion; i++) {
-    const pcl::PointXYZI& previousPoint = (_laserCloud[i - 1]);
-    const pcl::PointXYZI& point = (_laserCloud[i]);
-    const pcl::PointXYZI& nextPoint = (_laserCloud[i + 1]);
+    const pcl::PointXYZHSV& previousPoint = (_laserCloud[i - 1]);
+    const pcl::PointXYZHSV& point = (_laserCloud[i]);
+    const pcl::PointXYZHSV& nextPoint = (_laserCloud[i + 1]);
 
     float diffNext = calcSquaredDiff(nextPoint, point);
 
