@@ -43,19 +43,23 @@ catkin_package(
 add_definitions( -march=native )
 
 
-add_subdirectory(src/wrappers)
+add_subdirectory(src/loam)
+add_subdirectory(src/loam_continuous)
 
 add_executable(multiScanRegistration src/multi_scan_registration_node.cpp)
-target_link_libraries(multiScanRegistration ${catkin_LIBRARIES} ${PROJECT_NAME} )
+target_link_libraries(multiScanRegistration ${catkin_LIBRARIES})
 
 add_executable(laserOdometry src/laser_odometry_node.cpp)
-target_link_libraries(laserOdometry ${catkin_LIBRARIES} ${PROJECT_NAME} )
+target_link_libraries(laserOdometry ${catkin_LIBRARIES})
 
 add_executable(laserMapping src/laser_mapping_node.cpp)
-target_link_libraries(laserMapping ${catkin_LIBRARIES} ${PROJECT_NAME} )
+target_link_libraries(laserMapping ${catkin_LIBRARIES})
 
 add_executable(transformMaintenance src/transform_maintenance_node.cpp)
-target_link_libraries(transformMaintenance ${catkin_LIBRARIES} ${PROJECT_NAME} )
+target_link_libraries(transformMaintenance ${catkin_LIBRARIES} loam_ros )
+
+# add_executable(ctScanRegistration src/transform_maintenance_node.cpp)
+# target_link_libraries(transformMaintenance ${catkin_LIBRARIES} ${PROJECT_NAME} )
 
 # if (CATKIN_ENABLE_TESTING)
 #   find_package(rostest REQUIRED)

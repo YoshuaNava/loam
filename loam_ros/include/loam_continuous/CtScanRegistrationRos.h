@@ -30,8 +30,8 @@
 //   J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time.
 //     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
-#ifndef LOAM_TransformMaintenanceRos_H
-#define LOAM_TransformMaintenanceRos_H
+#ifndef LOAM_CT_SCAN_REGISTRATION_ROS_H
+#define LOAM_CT_SCAN_REGISTRATION_ROS_H
 
 #include <Eigen/Dense>
 #include <ros/node_handle.h>
@@ -41,18 +41,18 @@
 #include <tf/transform_broadcaster.h>
 
 #include "loam_utils/common.h"
-#include "loam_velodyne/TransformMaintenance.h"
-#include "common.h"
+#include "loam_continuous/CtScanRegistration.h"
 #include "loam_msgs/PoseUpdate.h"
+#include "common.h"
 
 namespace loam {
 
 /** \brief Implementation of the LOAM transformation maintenance component.
  *
  */
-class TransformMaintenanceRos {
+class CtScanRegistrationRos : public CtScanRegistration {
 public:
-  TransformMaintenanceRos();
+  CtScanRegistrationRos();
 
   /** \brief Setup component.
    *
@@ -87,7 +87,7 @@ public:
   void publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp);
 
 private:
-  TransformMaintenance _transformMaintainer;
+  // TransformMaintenance _transformMaintainer;
   bool _logResults;
   std::string _logFilename;
   bool _publishPath;
@@ -110,4 +110,4 @@ private:
 } // end namespace loam
 
 
-#endif //LOAM_TransformMaintenanceRos_H
+#endif //LOAM_CT_SCAN_REGISTRATION_ROS_H

@@ -34,5 +34,5 @@ add_definitions( -march=native )
 
 add_subdirectory(src/loam)
 add_subdirectory(src/loam_velodyne)
-# add_subdirectory(src/loam_continuous)
+add_subdirectory(src/loam_continuous)
 

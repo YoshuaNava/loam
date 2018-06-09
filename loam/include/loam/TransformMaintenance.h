@@ -30,8 +30,8 @@
 //   J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time.
 //     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
-#ifndef LOAM_TRANSFORMMAINTENANCE_H
-#define LOAM_TRANSFORMMAINTENANCE_H
+#ifndef LOAM_TRANSFORM_MAINTENANCE_H
+#define LOAM_TRANSFORM_MAINTENANCE_H
 
 #include <mutex>
 
@@ -87,4 +87,4 @@ private:
 } // end namespace loam
 
 
-#endif //LOAM_TRANSFORMMAINTENANCE_H
+#endif //LOAM_TRANSFORM_MAINTENANCE_H
