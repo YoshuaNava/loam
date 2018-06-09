@@ -34,7 +34,7 @@
 #define LOAM_MULTISCANREGISTRATION_H
 
 
-#include "loam_velodyne/ScanRegistration.h"
+#include "loam/ScanRegistration.h"
 
 
 namespace loam {

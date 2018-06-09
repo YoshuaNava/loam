@@ -27,11 +27,12 @@ catkin_package(
   CATKIN_DEPENDS pcl_catkin ecl_time
   DEPENDS EIGEN3 #PCL
   INCLUDE_DIRS include
-  LIBRARIES loam_velodyne
+  LIBRARIES loam loam_velodyne loam_continuous
 )
 
 add_definitions( -march=native )
 
-
+add_subdirectory(src/loam)
 add_subdirectory(src/loam_velodyne)
+add_subdirectory(src/loam_continuous)
 
