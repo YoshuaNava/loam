@@ -76,6 +76,15 @@ public:
 
   virtual void addImuData(IMUState newState);
 
+    /** \brief Process a new input cloud.
+   *
+   * @param laserCloudIn the new input cloud to process
+   * @param scanTime the scan (message) timestamp
+   */
+  virtual bool process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
+                       const Time& scanTime) 
+                       = 0;
+
 
   pcl::PointCloud<pcl::PointXYZHSV>& laserCloud() {
     return _laserCloud;
@@ -143,8 +152,9 @@ protected:
 
   /** \brief Extract features from current laser cloud.
    *
+   * @param beginIdx the index of the first scan to extract features from
    */
-  void extractFeatures();
+  virtual void extractFeatures(const uint16_t& beginIdx = 0) = 0;
 
   /** \brief Estimate curvature and sort points for the specified point range.
    *
@@ -173,8 +183,6 @@ protected:
   void markAsPicked(const size_t& cloudIdx,
                     const size_t& scanIdx);
 
-
-private:
   /** \brief Try to interpolate the IMU state for the given time.
    *
    * @param relTime the time relative to the scan time

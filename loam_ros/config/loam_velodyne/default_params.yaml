@@ -12,9 +12,9 @@ loam: {
     surface_curvature_threshold: 0.1,
     system_delay: 0,
     
-    # lidar_model: "VLP-16",
+    lidar_model: "VLP-16",
     # lidar_model: "HDL-32",
-    lidar_model: "HDL-64E",
+    # lidar_model: "HDL-64E",
   },
 
   odometry: {

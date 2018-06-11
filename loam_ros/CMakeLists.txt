@@ -28,8 +28,7 @@ find_package(Eigen3 REQUIRED QUIET)
 
 include_directories(
   include
-	${catkin_INCLUDE_DIRS} 
-	#${EIGEN3_INCLUDE_DIR}
+	${catkin_INCLUDE_DIRS}
   # ${PCL_INCLUDE_DIRS}
 )
 
@@ -44,10 +43,9 @@ add_definitions( -march=native )
 
 
 add_subdirectory(src/loam)
-add_subdirectory(src/loam_continuous)
 
-add_executable(multiScanRegistration src/multi_scan_registration_node.cpp)
-target_link_libraries(multiScanRegistration ${catkin_LIBRARIES})
+add_executable(scanRegistration src/scan_registration_node.cpp)
+target_link_libraries(scanRegistration ${catkin_LIBRARIES} loam_ros)
 
 add_executable(laserOdometry src/laser_odometry_node.cpp)
 target_link_libraries(laserOdometry ${catkin_LIBRARIES})
@@ -58,8 +56,6 @@ target_link_libraries(laserMapping ${catkin_LIBRARIES})
 add_executable(transformMaintenance src/transform_maintenance_node.cpp)
 target_link_libraries(transformMaintenance ${catkin_LIBRARIES} loam_ros )
 
-# add_executable(ctScanRegistration src/transform_maintenance_node.cpp)
-# target_link_libraries(transformMaintenance ${catkin_LIBRARIES} ${PROJECT_NAME} )
 
 # if (CATKIN_ENABLE_TESTING)
 #   find_package(rostest REQUIRED)

@@ -52,6 +52,12 @@ public:
 
   CtScanRegistration(const ScanRegistrationParams& params = ScanRegistrationParams());
 
+
+  bool process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
+               const Time& scanTime);
+
+  void extractFeatures(const uint16_t& beginIdx = 0);
+
   /** \brief Setup component in active mode.
    *
    * @param node the ROS node handle
@@ -66,19 +72,6 @@ public:
    */
   // void handleCloudMessage(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg);
 
-  /** \brief Process a new input cloud.
-   *
-   * @param laserCloudIn the new input cloud to process
-   * @param scanTime the scan (message) timestamp
-   */
-  void process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
-               const Time& scanTime);
-
-  /** \brief Extract features from current laser cloud.
-   *
-   * 
-   */
-  void extractFeatures();
 
 
 

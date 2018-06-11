@@ -82,10 +82,6 @@ CtScanRegistration::CtScanRegistration(const ScanRegistrationParams& params)
 
 // void CtScanRegistration::handleCloudMessage(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 // {
-//   if (_systemDelay > 0) {
-//     _systemDelay--;
-//     return;
-//   }
 
 //   // fetch new input cloud
 //   pcl::PointCloud<pcl::PointXYZ> laserCloudIn;
@@ -96,7 +92,7 @@ CtScanRegistration::CtScanRegistration(const ScanRegistrationParams& params)
 
 
 
-void CtScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
+bool CtScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                                  const Time& scanTime)
 {
   size_t cloudSize = laserCloudIn.size();
@@ -169,12 +165,14 @@ void CtScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserClou
   // extract features
   extractFeatures();
 
+  return true;
+
   // publish result
   // publishResult();
 }
 
 
-void CtScanRegistration::extractFeatures()
+void CtScanRegistration::extractFeatures(const uint16_t& beginIdx)
 {
   size_t cloudSize = _laserCloud.size();
   size_t startPoints[4] = {5,

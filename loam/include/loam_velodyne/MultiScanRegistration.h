@@ -101,22 +101,13 @@ private:
  */
 class MultiScanRegistration : virtual public ScanRegistration {
 public:
-  MultiScanRegistration(const MultiScanMapper& scanMapper = MultiScanMapper(),
-                        const ScanRegistrationParams& params = ScanRegistrationParams());
+  MultiScanRegistration(const ScanRegistrationParams& params = ScanRegistrationParams());
 
+  void createScanMapper();
 
-  /** \brief Process a new input cloud.
-   *
-   * @param laserCloudIn the new input cloud to process
-   * @param scanTime the scan (message) timestamp
-   */
-  void process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
+  bool process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                const Time& scanTime);
 
-  /** \brief Extract features from current laser cloud.
-   *
-   * @param beginIdx the index of the first scan to extract features from
-   */
   void extractFeatures(const uint16_t& beginIdx = 0);
   
 

@@ -71,19 +71,40 @@ int MultiScanMapper::getRingForAngle(const float& angle) {
 
 
 
-MultiScanRegistration::MultiScanRegistration(const MultiScanMapper& scanMapper,
-                                             const ScanRegistrationParams& params)
+MultiScanRegistration::MultiScanRegistration(const ScanRegistrationParams& params)
     : ScanRegistration(params),
-      _systemDelay(SYSTEM_DELAY),
-      _scanMapper(scanMapper)
+      _systemDelay(SYSTEM_DELAY) { 
+  createScanMapper();
+}
+
+void MultiScanRegistration::createScanMapper()
 {
+  _scanMapper = loam::MultiScanMapper();
 
-};
+  // fetch scan matching params
+  if (_params.lidarModel != "linear" && _params.lidarModel != "none") {
+    if (_params.lidarModel == "VLP-16") {
+      _scanMapper = loam::MultiScanMapper::Velodyne_VLP_16();
+    } else if (_params.lidarModel == "HDL-32") {
+      _scanMapper = loam::MultiScanMapper::Velodyne_HDL_32();
+    } else if (_params.lidarModel == "HDL-64E") {
+      _scanMapper = loam::MultiScanMapper::Velodyne_HDL_64E();
+    }
+  } else if (_params.lidarModel == "linear") {
+    _scanMapper.set(_params.vAngleMin, _params.vAngleMax, _params.nScanRings);
+  } else {
+    _scanMapper = loam::MultiScanMapper::Velodyne_VLP_16();
+  }
+}
 
-
-void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
+bool MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                                     const Time& scanTime)
 {
+  if (_systemDelay > 0) {
+    _systemDelay --;
+    return false;
+  }
+
   size_t cloudSize = laserCloudIn.size();
 
   // reset internal buffers and set IMU start state based on current scan time
@@ -176,6 +197,8 @@ void MultiScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserC
 
   // extract features
   extractFeatures();
+
+  return true;
 
   // publish result
   // publishResult();

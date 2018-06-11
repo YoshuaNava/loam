@@ -1,5 +1,5 @@
 add_library(loam_ros
-            # ScanRegistration.cpp
+            ScanRegistrationRos.cpp
             # MultiScanRegistration.cpp
             # LaserOdometry.cpp
             # LaserMapping.cpp
