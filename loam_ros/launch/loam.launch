@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="lidar_topic" default="/velodyne_points" />
+  <arg name="imu_topic" default="/imu/data" />
+
+  <node pkg="loam_ros" type="scanRegistration" name="scanRegistration" output="screen">
+    <remap from="/multi_scan_points" to="$(arg lidar_topic)" />
+    <remap from="/imu/data" to="$(arg imu_topic)" />
+  </node>
+
+  <node pkg="loam_ros" type="laserOdometry" name="laserOdometry" output="screen" respawn="true" />
+
+  <node pkg="loam_ros" type="laserMapping" name="laserMapping" output="screen" >
+    <remap from="/imu/data" to="$(arg imu_topic)" />
+  </node>
+
+  <node pkg="loam_ros" type="transformMaintenance" name="transformMaintenance" output="screen" />
+
+</launch>

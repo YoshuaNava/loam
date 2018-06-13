@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_catkin
   sensor_msgs
   roscpp
+  roslaunch
   rospy
   std_msgs
   std_srvs
@@ -33,7 +34,7 @@ include_directories(
 )
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs std_srvs pcl_catkin ecl_time loam loam_msgs
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp roslaunch rospy std_msgs std_srvs pcl_catkin ecl_time loam loam_msgs
   DEPENDS EIGEN3 #PCL
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
@@ -56,6 +57,9 @@ target_link_libraries(laserMapping ${catkin_LIBRARIES})
 add_executable(transformMaintenance src/transform_maintenance_node.cpp)
 target_link_libraries(transformMaintenance ${catkin_LIBRARIES} loam_ros )
 
+roslaunch_add_file_check(launch/loam.launch)
+roslaunch_add_file_check(launch/loam_velodyne.launch)
+roslaunch_add_file_check(launch/loam_continuous.launch)
 
 # if (CATKIN_ENABLE_TESTING)
 #   find_package(rostest REQUIRED)

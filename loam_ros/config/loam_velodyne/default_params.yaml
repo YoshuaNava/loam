@@ -1,6 +1,10 @@
 loam: {
   scan_period: 0.1,
 
+  lidar_model: "VLP-16",
+  # lidar_model: "HDL-32",
+  # lidar_model: "HDL-64E",
+
   registration: {
     imu_history_size: 200,
     n_feature_regions: 6,
@@ -11,10 +15,6 @@ loam: {
     less_flat_filter_size: 0.2,
     surface_curvature_threshold: 0.1,
     system_delay: 0,
-    
-    lidar_model: "VLP-16",
-    # lidar_model: "HDL-32",
-    # lidar_model: "HDL-64E",
   },
 
   odometry: {

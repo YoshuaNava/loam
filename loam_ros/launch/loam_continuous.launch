@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="lidar_topic" default="/velodyne_points" />
+  <arg name="lidar_topic" default="/sync_scan_cloud_filtered" />
   <arg name="imu_topic" default="/imu/data" />
   <arg name="rviz" default="true" />
-  <rosparam command="load" file="$(find loam_ros)/config/loam_velodyne/default_params.yaml"/>
+  <rosparam command="load" file="$(find loam_ros)/config/loam_continuous/default_params.yaml"/>
+
 
   <include file="$(find loam_ros)/launch/loam.launch" >
     <arg name="lidar_topic" default="$(arg lidar_topic)" />
