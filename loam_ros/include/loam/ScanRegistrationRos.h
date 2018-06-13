@@ -19,6 +19,8 @@ public:
 
   ScanRegistrationRos() {};
 
+  ~ScanRegistrationRos();
+
   bool setup(ros::NodeHandle& node,
              ros::NodeHandle& privateNode);
 

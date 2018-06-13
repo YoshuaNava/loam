@@ -8,6 +8,10 @@
 
 namespace loam {
 
+ScanRegistrationRos::~ScanRegistrationRos() {
+  _scanRegistration.release();
+}
+
 bool ScanRegistrationRos::setup(ros::NodeHandle& node,
                                 ros::NodeHandle& privateNode) {
 
