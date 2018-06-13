@@ -105,15 +105,24 @@ public:
 
   void createScanMapper();
 
+  /** \brief Prepare for next scan / sweep.
+   *
+   * @param scanTime the current scan time
+   * @param newSweep indicator if a new sweep has started
+   */
+  void reset(const Time& scanTime,
+             const bool& newSweep = true);
+
+
   bool process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                const Time& scanTime);
 
   void extractFeatures(const uint16_t& beginIdx = 0);
   
+  void prepareImuStateMessage(const IMUState imuStart, const IMUState imuCur,
+                              const Vector3 imuPositionShift, const Vector3 imuVelocityShift);
 
-  int& systemDelay() {
-    return _systemDelay;
-  }
+  int& systemDelay() { return _systemDelay; }
 
 protected:
   int _systemDelay;             ///< system startup delay counter

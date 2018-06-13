@@ -51,7 +51,6 @@ ScanRegistration::ScanRegistration(const ScanRegistrationParams& params)
         _cornerPointsLessSharp(),
         _surfacePointsFlat(),
         _surfacePointsLessFlat(),
-        _imuTrans(4, 1),
         _regionCurvature(),
         _regionLabel(),
         _regionSortIndices(),
@@ -80,41 +79,13 @@ void ScanRegistration::addImuData(IMUState newState)
 }
 
 
-void ScanRegistration::reset(const Time& scanTime,
-                             const bool& newSweep)
-{
-  _scanTime = scanTime;
-
-  // re-initialize IMU start index and state
-  _imuIdx = 0;
-  if (hasIMUData()) {
-    interpolateIMUStateFor(0, _imuStart);
-  }
-
-  // clear internal cloud buffers at the beginning of a sweep
-  if (newSweep) {
-    _sweepStart = scanTime;
-
-    // clear cloud buffers
-    _laserCloud.clear();
-    _cornerPointsSharp.clear();
-    _cornerPointsLessSharp.clear();
-    _surfacePointsFlat.clear();
-    _surfacePointsLessFlat.clear();
-
-    // clear scan indices vector
-    _scanIndices.clear();
-  }
-}
-
-
-
 void ScanRegistration::setIMUTransformFor(const float& relTime)
 {
   interpolateIMUStateFor(relTime, _imuCur);
 
   float relSweepTime = (_scanTime - _sweepStart) + relTime;
   _imuPositionShift = _imuCur.position - _imuStart.position - _imuStart.velocity * relSweepTime;
+  _imuVelocityShift = _imuCur.velocity - _imuStart.velocity;
 }
 
 

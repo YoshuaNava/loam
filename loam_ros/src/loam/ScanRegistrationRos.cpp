@@ -223,7 +223,7 @@ void ScanRegistrationRos::publishResults()
   loam::IMUState imuCur = _scanRegistration->imuCur();
   loam::Vector3 imuShiftFromStart = _scanRegistration->imuPositionShift();
   loam::Vector3 imuVelocityFromStart = imuCur.velocity - imuStart.velocity;
-  pcl::PointCloud<pcl::PointXYZ> imuTrans(4,1);
+  pcl::PointCloud<pcl::PointXYZ> imuTrans = _scanRegistration->imuTrans();
 
 
   // publish full resolution and feature point clouds
@@ -235,26 +235,6 @@ void ScanRegistrationRos::publishResults()
 
 
   // publish corresponding IMU transformation information
-  imuTrans[0].x = imuStart.pitch.rad();
-  imuTrans[0].y = imuStart.yaw.rad();
-  imuTrans[0].z = imuStart.roll.rad();
-
-  imuTrans[1].x = imuCur.pitch.rad();
-  imuTrans[1].y = imuCur.yaw.rad();
-  imuTrans[1].z = imuCur.roll.rad();
-
-  loam::rotateYXZ(imuShiftFromStart, -imuStart.yaw, -imuStart.pitch, -imuStart.roll);
-
-  imuTrans[2].x = imuShiftFromStart.x();
-  imuTrans[2].y = imuShiftFromStart.y();
-  imuTrans[2].z = imuShiftFromStart.z();
-
-  loam::rotateYXZ(imuVelocityFromStart, -imuStart.yaw, -imuStart.pitch, -imuStart.roll);
-
-  imuTrans[3].x = imuVelocityFromStart.x();
-  imuTrans[3].y = imuVelocityFromStart.y();
-  imuTrans[3].z = imuVelocityFromStart.z();
-
   loam::publishCloudMsg(_pubImuTrans, imuTrans, ros::Time(sweepStart), "/camera");
 }
 

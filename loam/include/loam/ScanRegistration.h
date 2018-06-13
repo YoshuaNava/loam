@@ -102,13 +102,6 @@ public:
   Time& sweepStart() { return _sweepStart; }
 
 protected:
-  /** \brief Prepare for next scan / sweep.
-   *
-   * @param scanTime the current scan time
-   * @param newSweep indicator if a new sweep has started
-   */
-  void reset(const Time& scanTime,
-             const bool& newSweep = true);
 
   /** \breif Check is IMU data is available. */
   inline bool hasIMUData() { return _imuHistory.size() > 0; };
@@ -175,6 +168,7 @@ protected:
   IMUState _imuStart;                     ///< the interpolated IMU state corresponding to the start time of the currently processed laser scan
   IMUState _imuCur;                       ///< the interpolated IMU state corresponding to the time of the currently processed laser scan point
   Vector3 _imuPositionShift;              ///< position shift between accumulated IMU position and interpolated IMU position
+  Vector3 _imuVelocityShift;              ///< velocity shift between accumulated IMU velocity and interpolated IMU velocity
   size_t _imuIdx;                         ///< the current index in the IMU history
   CircularBuffer<IMUState> _imuHistory;   ///< history of IMU states for cloud registration
 

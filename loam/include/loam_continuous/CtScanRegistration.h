@@ -48,13 +48,31 @@ public:
 
   CtScanRegistration(const ScanRegistrationParams& params = ScanRegistrationParams());
 
+  /** \brief Prepare for next scan / sweep.
+   *
+   * @param scanTime the current scan time
+   * @param newSweep indicator if a new sweep has started
+   */
+  void reset(const Time& scanTime,
+             const bool& newSweep = true);
+
   bool process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                const Time& scanTime);
 
   void extractFeatures(const uint16_t& beginIdx = 0);
 
+  void prepareImuStateMessage(const IMUState imuStart, const IMUState imuStartLast,
+                              const IMUState imuCur, const IMUState imuCurLast,
+                              const Vector3 imuPositionShift, const Vector3 imuPositionShiftLast,
+                              const Vector3 imuVelocityShift, const Vector3 imuVelocityShiftLast) ;
+
 protected:
   int _laserRotDir;
+
+  IMUState _imuStartLast;           ///< the interpolated IMU state corresponding to the start time of the previous processed laser scan
+  IMUState _imuCurLast;             ///< the interpolated IMU state corresponding to the time of the previous processed laser scan point
+  Vector3 _imuPositionShiftLast;              ///< position shift between accumulated IMU position and interpolated IMU position
+  Vector3 _imuVelocityShiftLast;              ///< position shift between accumulated IMU position and interpolated IMU position
 
   ros::Subscriber _subLaserCloud;   ///< input cloud message subscriber
 

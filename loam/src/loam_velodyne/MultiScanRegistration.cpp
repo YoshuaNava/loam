@@ -74,6 +74,7 @@ int MultiScanMapper::getRingForAngle(const float& angle) {
 MultiScanRegistration::MultiScanRegistration(const ScanRegistrationParams& params)
     : ScanRegistration(params),
       _systemDelay(SYSTEM_DELAY) { 
+  _imuTrans = pcl::PointCloud<pcl::PointXYZ>(4, 1);
   createScanMapper();
 }
 
@@ -94,6 +95,33 @@ void MultiScanRegistration::createScanMapper()
     _scanMapper.set(_params.vAngleMin, _params.vAngleMax, _params.nScanRings);
   } else {
     _scanMapper = loam::MultiScanMapper::Velodyne_VLP_16();
+  }
+}
+
+void MultiScanRegistration::reset(const Time& scanTime,
+                             const bool& newSweep)
+{
+  _scanTime = scanTime;
+
+  // re-initialize IMU start index and state
+  _imuIdx = 0;
+  if (hasIMUData()) {
+    interpolateIMUStateFor(0, _imuStart);
+  }
+
+  // clear internal cloud buffers at the beginning of a sweep
+  if (newSweep) {
+    _sweepStart = scanTime;
+
+    // clear cloud buffers
+    _laserCloud.clear();
+    _cornerPointsSharp.clear();
+    _cornerPointsLessSharp.clear();
+    _surfacePointsFlat.clear();
+    _surfacePointsLessFlat.clear();
+
+    // clear scan indices vector
+    _scanIndices.clear();
   }
 }
 
@@ -297,6 +325,31 @@ void MultiScanRegistration::extractFeatures(const uint16_t& beginIdx)
 
     _surfacePointsLessFlat += surfPointsLessFlatScanDS;
   }
+
+  prepareImuStateMessage(_imuStart, _imuCur, _imuPositionShift, _imuVelocityShift);
+}
+
+void MultiScanRegistration::prepareImuStateMessage(const IMUState imuStart, const IMUState imuCur,
+                                                   Vector3 imuPositionShift, Vector3 imuVelocityShift) 
+{
+  rotateYXZ(imuPositionShift, -imuStart.yaw, -imuStart.pitch, -imuStart.roll);
+  rotateYXZ(imuVelocityShift, -imuStart.yaw, -imuStart.pitch, -imuStart.roll);
+
+  _imuTrans.points[0].x = imuStart.pitch.rad();
+  _imuTrans.points[0].y = imuStart.yaw.rad();
+  _imuTrans.points[0].z = imuStart.roll.rad();
+
+  _imuTrans.points[1].x = imuCur.pitch.rad();
+  _imuTrans.points[1].y = imuCur.yaw.rad();
+  _imuTrans.points[1].z = imuCur.roll.rad();
+
+  _imuTrans.points[2].x = imuPositionShift.x();
+  _imuTrans.points[2].y = imuPositionShift.y();
+  _imuTrans.points[2].z = imuPositionShift.z();
+
+  _imuTrans.points[3].x = imuVelocityShift.x();
+  _imuTrans.points[3].y = imuVelocityShift.y();
+  _imuTrans.points[3].z = imuVelocityShift.z();
 }
 
 } // end namespace loam
