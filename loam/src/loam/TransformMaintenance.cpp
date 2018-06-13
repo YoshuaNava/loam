@@ -85,11 +85,6 @@ void TransformMaintenance::correctEstimate(const Eigen::Vector3d& pos,
   // }
 }
 
-float* TransformMaintenance::getIntegratedTransform()
-{
-  return _transformMapped;
-}
-
 void TransformMaintenance::transformAssociateToMap()
 {
   std::lock_guard<std::mutex> lock(main_thread_mutex_);

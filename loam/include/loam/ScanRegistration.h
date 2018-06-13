@@ -85,46 +85,21 @@ public:
                        const Time& scanTime) 
                        = 0;
 
+  ScanRegistrationParams& params() { return _params; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>& laserCloud() {
-    return _laserCloud;
-  }
+  pcl::PointCloud<pcl::PointXYZHSV>& laserCloud() { return _laserCloud; }
+  pcl::PointCloud<pcl::PointXYZHSV>& cornerPointsSharp() { return _cornerPointsSharp; }
+  pcl::PointCloud<pcl::PointXYZHSV>& cornerPointsLessSharp() { return _cornerPointsLessSharp; }
+  pcl::PointCloud<pcl::PointXYZHSV>& surfacePointsFlat() { return _surfacePointsFlat; }
+  pcl::PointCloud<pcl::PointXYZHSV>& surfacePointsLessFlat() { return _surfacePointsLessFlat; }
+  pcl::PointCloud<pcl::PointXYZ>& imuTrans() { return _imuTrans; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>& cornerPointsSharp() {
-    return _cornerPointsSharp;
-  }
+  IMUState& imuStart() { return _imuStart; }
+  IMUState& imuCur() { return _imuCur; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>& cornerPointsLessSharp() {
-    return _cornerPointsLessSharp;
-  }
+  Vector3& imuPositionShift() { return _imuPositionShift; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>& surfacePointsFlat() {
-    return _surfacePointsFlat;
-  }
-
-  pcl::PointCloud<pcl::PointXYZHSV>& surfacePointsLessFlat() {
-    return _surfacePointsLessFlat;
-  }
-
-  pcl::PointCloud<pcl::PointXYZ>& imuTrans() {
-    return _imuTrans;
-  }
-
-  IMUState& imuStart() {
-    return _imuStart;
-  }
-
-  IMUState& imuCur() {
-    return _imuCur;
-  }
-
-  Vector3& imuPositionShift() {
-    return _imuPositionShift;
-  }
-
-  Time& sweepStart() {
-    return _sweepStart;
-  }
+  Time& sweepStart() { return _sweepStart; }
 
 protected:
   /** \brief Prepare for next scan / sweep.

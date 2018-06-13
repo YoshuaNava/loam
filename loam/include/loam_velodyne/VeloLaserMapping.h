@@ -70,78 +70,29 @@ public:
 
   void resetEstimateValues();
 
-  LaserMappingParams& params() {
-    return _params;
-  }
+  LaserMappingParams& params() { return _params; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudCornerLast() {
-    return _laserCloudCornerLast;
-  }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudCornerLast() { return _laserCloudCornerLast; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudSurfLast() { return _laserCloudSurfLast; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudFullRes() { return _laserCloudFullRes; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudSurroundDS() { return _laserCloudSurroundDS; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudSurfLast() {
-    return _laserCloudSurfLast;
-  }
+  CircularBuffer<IMUState>& imuHistory() { return _imuHistory; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudFullRes() {
-    return _laserCloudFullRes;
-  }
+  Twist& transformSum() { return _transformSum; }
+  Twist& transformTobeMapped() { return _transformTobeMapped; }
+  Twist& transformBefMapped() { return _transformBefMapped; }
+  Twist& transformAftMapped() { return _transformAftMapped; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudSurroundDS() {
-    return _laserCloudSurroundDS;
-  }
+  Time& timeLaserCloudCornerLast() { return _timeLaserCloudCornerLast; }
+  Time& timeLaserCloudSurfLast() { return _timeLaserCloudSurfLast; }
+  Time& timeLaserCloudFullRes() { return _timeLaserCloudFullRes; }
+  Time& timeLaserOdometry() { return _timeLaserOdometry; }
 
-  CircularBuffer<IMUState>& imuHistory() {
-    return _imuHistory;
-  }
-
-  Twist& transformSum() {
-    return _transformSum;
-  }
-
-  Twist& transformTobeMapped() {
-    return _transformTobeMapped;
-  }
-
-  Twist& transformBefMapped() {
-    return _transformBefMapped;
-  }
-
-  Twist& transformAftMapped() {
-    return _transformAftMapped;
-  }
-
-  Time& timeLaserCloudCornerLast() {
-    return _timeLaserCloudCornerLast;
-  }
-
-  Time& timeLaserCloudSurfLast() {
-    return _timeLaserCloudSurfLast;
-  }
-
-  Time& timeLaserCloudFullRes() {
-    return _timeLaserCloudFullRes;
-  }
-
-  Time& timeLaserOdometry() {
-    return _timeLaserOdometry;
-  }
-
-  bool& newLaserCloudCornerLast() {
-    return _newLaserCloudCornerLast;
-  }
-
-  bool& newLaserCloudSurfLast() {
-    return _newLaserCloudSurfLast;
-  }
-
-  bool& newLaserCloudFullRes() {
-    return _newLaserCloudFullRes;
-  }
-
-  bool& newLaserOdometry() {
-    return _newLaserOdometry;
-  }
-
+  bool& newLaserCloudCornerLast() { return _newLaserCloudCornerLast; }
+  bool& newLaserCloudSurfLast() { return _newLaserCloudSurfLast; }
+  bool& newLaserCloudFullRes() { return _newLaserCloudFullRes; }
+  bool& newLaserOdometry() { return _newLaserOdometry; }
 
 protected:
   /** \brief Reset flags, etc. */

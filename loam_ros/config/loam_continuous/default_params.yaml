@@ -4,7 +4,7 @@ loam: {
 
   registration: {
     imu_history_size: 200,
-    n_feature_regions: 6,
+    n_feature_regions: 4,
     curvature_regions: 5,
     max_corner_sharp: 2,
     max_corner_less_sharp: 2,

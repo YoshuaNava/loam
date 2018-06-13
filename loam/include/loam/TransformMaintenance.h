@@ -51,7 +51,7 @@ public:
   void correctEstimate(const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(), 
                        const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero());
 
-  float* getIntegratedTransform();
+  float* getIntegratedTransform() { return _transformMapped; }
 
   /** \brief Handler method for laser odometry transforms.
    *

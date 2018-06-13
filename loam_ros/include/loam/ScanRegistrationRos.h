@@ -45,6 +45,8 @@ public:
 
 protected:
 
+  const char* MODULE_NAME = "ScanRegistration";
+
   std::unique_ptr<loam::ScanRegistration> _scanRegistration;
 
   ros::Subscriber _subLaserCloud;   ///< input cloud message subscriber

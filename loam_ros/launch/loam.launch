@@ -5,7 +5,7 @@
   <arg name="imu_topic" default="/imu/data" />
 
   <node pkg="loam_ros" type="scanRegistration" name="scanRegistration" output="screen">
-    <remap from="/multi_scan_points" to="$(arg lidar_topic)" />
+    <remap from="/scan_points" to="$(arg lidar_topic)" />
     <remap from="/imu/data" to="$(arg imu_topic)" />
   </node>
 

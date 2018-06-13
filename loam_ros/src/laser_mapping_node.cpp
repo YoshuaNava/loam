@@ -7,7 +7,7 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
 
-#include "loam_velodyne/LaserMapping.h"
+#include "loam_velodyne/VeloLaserMapping.h"
 #include "common.h"
 #include "loam_msgs/PoseUpdate.h"
 

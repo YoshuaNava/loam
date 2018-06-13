@@ -41,56 +41,8 @@ namespace loam {
 
 CtScanRegistration::CtScanRegistration(const ScanRegistrationParams& params)
     : ScanRegistration(params),
-      _systemDelay(SYSTEM_DELAY),
       _laserRotDir(1)
-{
-
-};
-
-
-
-// bool CtScanRegistration::setup(ros::NodeHandle& node,
-//                                ros::NodeHandle& privateNode)
-// {
-//   if (!ScanRegistration::setup(node, privateNode)) {
-//     return false;
-//   }
-
-//   // fetch scan mapping params
-//   std::string lidarName;
-
-//   if (privateNode.getParam("lidar", lidarName))
-//   {
-//     if (lidarName == "ct_2d") {
-//       ROS_INFO("Using continuous-rotation 2D laser scanner");
-//     }
-
-//     if (!privateNode.hasParam("scanPeriod")) {
-//       _params.scanPeriod = 0.1;
-//       ROS_INFO("Set scanPeriod: %f", _params.scanPeriod);
-//     }
-//   }
-
-//   // subscribe to input cloud topic
-//   _subLaserCloud = node.subscribe<sensor_msgs::PointCloud2>
-//       ("/sync_scan_cloud_filtered", 2, &CtScanRegistration::handleCloudMessage, this);
-
-//   return true;
-// }
-
-
-
-// void CtScanRegistration::handleCloudMessage(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
-// {
-
-//   // fetch new input cloud
-//   pcl::PointCloud<pcl::PointXYZ> laserCloudIn;
-//   pcl::fromROSMsg(*laserCloudMsg, laserCloudIn);
-
-//   process(laserCloudIn, laserCloudMsg->header.stamp);
-// }
-
-
+{ };
 
 bool CtScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                                  const Time& scanTime)
@@ -116,8 +68,8 @@ bool CtScanRegistration::process(const pcl::PointCloud<pcl::PointXYZ>& laserClou
 
   bool newSweep = false;
   if (laserAngle * _laserRotDir < 0 &&
-      scanTime - _sweepStart > _params.scanPeriod) {
-    // ROS_WARN("######################    NEW SWEEP!    ######################");
+    scanTime - _sweepStart > _params.scanPeriod) {
+    // std::cout << "######################    NEW SWEEP!    ######################" << std::endl;
     _laserRotDir *= -1;
     newSweep = true;
   }
@@ -258,8 +210,5 @@ void CtScanRegistration::extractFeatures(const uint16_t& beginIdx)
 
   _surfacePointsLessFlat += surfPointsLessFlatScanDS;
 }
-
-
-
 
 } // end namespace loam

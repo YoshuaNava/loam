@@ -14,9 +14,8 @@ int main(int argc, char **argv)
 
   if(scanRegistrationRos.setup(node, privateNode))
     ros::spin();
-  else {
+  else
     ROS_ERROR("Scan registration: Invalid parameters introduced. The node will shutdown.");
-  }
 
   return 0;
 }

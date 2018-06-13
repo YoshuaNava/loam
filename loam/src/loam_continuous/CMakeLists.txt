@@ -1,6 +1,6 @@
 add_library(loam_continuous SHARED
             CtScanRegistration.cpp
-            # LaserOdometry.cpp
+            CtLaserOdometry.cpp
             # LaserMapping.cpp
             # TransformMaintenance.cpp
 )

@@ -68,125 +68,42 @@ public:
 
   void resetEstimateValues();
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cornerPointsSharp() {
-    return _cornerPointsSharp;
-  }
+  LaserOdometryParams& params() { return _params; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cornerPointsLessSharp() {
-    return _cornerPointsLessSharp;
-  }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cornerPointsSharp() { return _cornerPointsSharp; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& cornerPointsLessSharp() { return _cornerPointsLessSharp; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& surfPointsFlat() { return _surfPointsFlat; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& surfPointsLessFlat() { return _surfPointsLessFlat; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudFullRes() { return _laserCloudFullRes; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& lastCornerCloud() { return _lastCornerCloud; }
+  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& lastSurfaceCloud() { return _lastSurfaceCloud; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& surfPointsFlat() {
-    return _surfPointsFlat;
-  }
+  Twist& transform() { return _transform; }
+  Twist& transformSum() { return _transformSum; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& surfPointsLessFlat() {
-    return _surfPointsLessFlat;
-  }
+  Angle& imuRollStart() { return _imuRollStart; }
+  Angle& imuPitchStart() { return _imuPitchStart; }
+  Angle& imuYawStart() { return _imuYawStart; }
+  Angle& imuRollEnd() { return _imuRollEnd; }
+  Angle& imuPitchEnd() { return _imuPitchEnd; }
+  Angle& imuYawEnd() { return _imuYawEnd; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& laserCloudFullRes() {
-    return _laserCloudFullRes;
-  }
+  Vector3& imuShiftFromStart() { return _imuShiftFromStart; }
+  Vector3& imuVeloFromStart() { return _imuVeloFromStart; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& lastCornerCloud() {
-    return _lastCornerCloud;
-  }
+  Time& timeCornerPointsSharp() { return _timeCornerPointsSharp; }
+  Time& timeCornerPointsLessSharp() { return _timeCornerPointsLessSharp; }
+  Time& timeSurfPointsFlat() { return _timeSurfPointsFlat; }
+  Time& timeSurfPointsLessFlat() { return _timeSurfPointsLessFlat; }
+  Time& timeLaserCloudFullRes() { return _timeLaserCloudFullRes; }
+  Time& timeImuTrans() { return _timeImuTrans; }
 
-  pcl::PointCloud<pcl::PointXYZHSV>::Ptr& lastSurfaceCloud() {
-    return _lastSurfaceCloud;
-  }
-
-  LaserOdometryParams& params() {
-    return _params;
-  }
-
-  Twist& transform() {
-    return _transform;
-  }
-
-  Twist& transformSum() {
-    return _transformSum;
-  }
-
-  Angle& imuRollStart() {
-    return _imuRollStart;
-  }
-
-  Angle& imuPitchStart() {
-    return _imuPitchStart;
-  }
-
-  Angle& imuYawStart() {
-    return _imuYawStart;
-  }
-
-  Angle& imuRollEnd() {
-    return _imuRollEnd;
-  }
-
-  Angle& imuPitchEnd() {
-    return _imuPitchEnd;
-  }
-
-  Angle& imuYawEnd() {
-    return _imuYawEnd;
-  }
-
-  Vector3& imuShiftFromStart() {
-    return _imuShiftFromStart;
-  }
-
-  Vector3& imuVeloFromStart() {
-    return _imuVeloFromStart;
-  }
-
-  Time& timeCornerPointsSharp() {
-    return _timeCornerPointsSharp;
-  }
-
-  Time& timeCornerPointsLessSharp() {
-    return _timeCornerPointsLessSharp;
-  }
-
-  Time& timeSurfPointsFlat() {
-    return _timeSurfPointsFlat;
-  }
-
-  Time& timeSurfPointsLessFlat() {
-    return _timeSurfPointsLessFlat;
-  }
-
-  Time& timeLaserCloudFullRes() {
-    return _timeLaserCloudFullRes;
-  }
-
-  Time& timeImuTrans() {
-    return _timeImuTrans;
-  }
-
-  bool& newCornerPointsSharp() {
-    return _newCornerPointsSharp;
-  }
-
-  bool& newCornerPointsLessSharp() {
-    return _newCornerPointsLessSharp;
-  }
-
-  bool& newSurfPointsFlat() {
-    return _newSurfPointsFlat;
-  }
-
-  bool& newSurfPointsLessFlat() {
-    return _newSurfPointsLessFlat;
-  }
-
-  bool& newLaserCloudFullRes() {
-    return _newLaserCloudFullRes;
-  }
-
-  bool& newImuTrans() {
-    return _newImuTrans;
-  }
+  bool& newCornerPointsSharp() { return _newCornerPointsSharp; }
+  bool& newCornerPointsLessSharp() { return _newCornerPointsLessSharp; }
+  bool& newSurfPointsFlat() { return _newSurfPointsFlat; }
+  bool& newSurfPointsLessFlat() { return _newSurfPointsLessFlat; }
+  bool& newLaserCloudFullRes() { return _newLaserCloudFullRes; }
+  bool& newImuTrans() { return _newImuTrans; }
 
 protected:
   /** \brief Reset flags, etc. */

@@ -33,11 +33,8 @@
 #ifndef LOAM_CT_SCAN_REGISTRATION_H
 #define LOAM_CT_SCAN_REGISTRATION_H
 
-#include <ros/ros.h>
 #include "loam/ScanRegistration.h"
 #include "loam_utils/math_utils.h"
-
-#include <sensor_msgs/PointCloud2.h>
 
 
 namespace loam {
@@ -48,45 +45,21 @@ namespace loam {
  */
 class CtScanRegistration : virtual public ScanRegistration {
 public:
-  // CtScanRegistration(const RegistrationParams& config = RegistrationParams());
 
   CtScanRegistration(const ScanRegistrationParams& params = ScanRegistrationParams());
-
 
   bool process(const pcl::PointCloud<pcl::PointXYZ>& laserCloudIn,
                const Time& scanTime);
 
   void extractFeatures(const uint16_t& beginIdx = 0);
 
-  /** \brief Setup component in active mode.
-   *
-   * @param node the ROS node handle
-   * @param privateNode the private ROS node handle
-   */
-  // bool setup(ros::NodeHandle& node,
-  //            ros::NodeHandle& privateNode);
-
-  /** \brief Handler method for input cloud messages.
-   *
-   * @param laserCloudMsg the new input cloud message to process
-   */
-  // void handleCloudMessage(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg);
-
-
-
-
 protected:
-  int _systemDelay;             ///< system startup delay counter
   int _laserRotDir;
 
   ros::Subscriber _subLaserCloud;   ///< input cloud message subscriber
 
-
-private:
-  static const int SYSTEM_DELAY = 20;
 };
 
 } // end namespace loam
-
 
 #endif // LOAM_CT_SCAN_REGISTRATION_H

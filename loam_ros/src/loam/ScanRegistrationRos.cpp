@@ -34,7 +34,7 @@ bool ScanRegistrationRos::setup(ros::NodeHandle& node,
 
   // subscribe to input cloud topic
   _subLaserCloud = node.subscribe<sensor_msgs::PointCloud2>
-        ("/multi_scan_points", 2, &ScanRegistrationRos::handleCloudMessage, this);
+        ("/scan_points", 2, &ScanRegistrationRos::handleCloudMessage, this);
 
   // // subscribe to IMU topic
   _subImu = node.subscribe<sensor_msgs::Imu>("/imu/data", 50, &ScanRegistrationRos::handleIMUMessage, this);
@@ -47,7 +47,6 @@ loam::ScanRegistrationParams ScanRegistrationRos::loadParameters(ros::NodeHandle
                                                                  ros::NodeHandle& privateNode)
 {
   loam::ScanRegistrationParams params = loam::ScanRegistrationParams();
-  const char* module_name = "MultiScanRegistration";
   
   // fetch laser mapping params
   float fParam;
@@ -55,113 +54,114 @@ loam::ScanRegistrationParams ScanRegistrationRos::loadParameters(ros::NodeHandle
 
   if (node.getParam("/loam/scan_period", fParam)) {
     if (fParam <= 0) {
-      ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", module_name, fParam);
+      ROS_ERROR("%s: Invalid scan_period parameter: %f (expected > 0)", MODULE_NAME, fParam);
     } else {
       params.scanPeriod = fParam;
-      // ROS_INFO("%s: Set scan_period: %g", module_name, fParam);
+      // ROS_INFO("%s: Set scan_period: %g", MODULE_NAME, fParam);
     }
   }
 
   if (node.getParam("/loam/registration/imu_history_size", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("%s: Invalid imu_history_size parameter: %d (expected >= 1)", module_name, iParam);
+      ROS_ERROR("%s: Invalid imu_history_size parameter: %d (expected >= 1)", MODULE_NAME, iParam);
     } else {
       params.imuHistorySize = iParam;
-      // ROS_INFO("%s: Set imu_history_size: %d", module_name, iParam);
+      // ROS_INFO("%s: Set imu_history_size: %d", MODULE_NAME, iParam);
     }
   }
 
   if (node.getParam("/loam/registration/n_feature_regions", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("%s: Invalid n_feature_regions parameter: %d (expected >= 1)", module_name, iParam);
+      ROS_ERROR("%s: Invalid n_feature_regions parameter: %d (expected >= 1)", MODULE_NAME, iParam);
     } else {
       params.nFeatureRegions = iParam;
-      // ROS_INFO("%s: Set n_feature_regions: %d", module_name, iParam);
+      // ROS_INFO("%s: Set n_feature_regions: %d", MODULE_NAME, iParam);
     }
   }
 
   if (node.getParam("/loam/registration/curvature_region", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("%s: Invalid curvature_region parameter: %d (expected >= 1)", module_name, iParam);
+      ROS_ERROR("%s: Invalid curvature_region parameter: %d (expected >= 1)", MODULE_NAME, iParam);
     } else {
       params.curvatureRegion = iParam;
-      // ROS_INFO("%s: Set curvature_region: +/- %d", module_name, iParam);
+      // ROS_INFO("%s: Set curvature_region: +/- %d", MODULE_NAME, iParam);
     }
   }
 
   if (node.getParam("/loam/registration/max_corner_sharp", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("%s: Invalid max_corner_sharp parameter: %d (expected >= 1)", module_name, iParam);
+      ROS_ERROR("%s: Invalid max_corner_sharp parameter: %d (expected >= 1)", MODULE_NAME, iParam);
     } else {
       params.maxCornerSharp = iParam;
       params.maxCornerLessSharp = 10 * iParam;
-      // ROS_INFO("%s: Set max_corner_sharp / less sharp: %d / %d", module_name, iParam, params.maxCornerLessSharp);
+      // ROS_INFO("%s: Set max_corner_sharp / less sharp: %d / %d", MODULE_NAME, iParam, params.maxCornerLessSharp);
     }
   }
 
   if (node.getParam("/loam/registration/max_corner_less_sharp", iParam)) {
     if (iParam < params.maxCornerSharp) {
-      ROS_ERROR("%s: Invalid max_corner_less_sharp parameter: %d (expected >= %d)", module_name, iParam, params.maxCornerSharp);
+      ROS_ERROR("%s: Invalid max_corner_less_sharp parameter: %d (expected >= %d)", MODULE_NAME, iParam, params.maxCornerSharp);
     } else {
       params.maxCornerLessSharp = iParam;
-      // ROS_INFO("%s: Set max_corner_less_sharp: %d", module_name, iParam);
+      // ROS_INFO("%s: Set max_corner_less_sharp: %d", MODULE_NAME, iParam);
     }
   }
 
   if (node.getParam("/loam/registration/max_surface_flat", iParam)) {
     if (iParam < 1) {
-      ROS_ERROR("%s: Invalid max_surface_flat parameter: %d (expected >= 1)", module_name, iParam);
+      ROS_ERROR("%s: Invalid max_surface_flat parameter: %d (expected >= 1)", MODULE_NAME, iParam);
     } else {
       params.maxSurfaceFlat = iParam;
-      // ROS_INFO("%s: Set max_surface_flat: %d", module_name, iParam);
+      // ROS_INFO("%s: Set max_surface_flat: %d", MODULE_NAME, iParam);
     }
   }
 
   if (node.getParam("/loam/registration/surface_curvature_threshold", fParam)) {
     if (fParam < 0.001) {
-      ROS_ERROR("%s: Invalid surface_curvature_threshold parameter: %f (expected >= 0.001)", module_name, fParam);
+      ROS_ERROR("%s: Invalid surface_curvature_threshold parameter: %f (expected >= 0.001)", MODULE_NAME, fParam);
     } else {
       params.surfaceCurvatureThreshold = fParam;
-      // ROS_INFO("%s: Set surface_curvature_threshold: %g", module_name, fParam);
+      // ROS_INFO("%s: Set surface_curvature_threshold: %g", MODULE_NAME, fParam);
     }
   }
 
   if (node.getParam("/loam/registration/less_flat_filter_size", fParam)) {
     if (fParam < 0.001) {
-      ROS_ERROR("%s: Invalid less_flat_filter_size parameter: %f (expected >= 0.001)", module_name, fParam);
+      ROS_ERROR("%s: Invalid less_flat_filter_size parameter: %f (expected >= 0.001)", MODULE_NAME, fParam);
     } else {
       params.lessFlatFilterSize = fParam;
-      // ROS_INFO("%s: Set less_flat_filter_size: %g", module_name, fParam);
+      // ROS_INFO("%s: Set less_flat_filter_size: %g", MODULE_NAME, fParam);
     }
   }
 
   // load MultiScanMapper params
   bool validParams = true;
-  if (node.getParam("/loam/registration/lidar_model", params.lidarModel)) {
+  if (node.getParam("/loam/lidar_model", params.lidarModel)) {
     if((params.lidarModel == "VLP-16") || (params.lidarModel == "HDL-32") || (params.lidarModel == "HDL-64E"))
-      ROS_INFO("%s: Set  %s  scan mapper.", module_name, params.lidarModel.c_str());
-    else
-      validParams = false;
-  }
-  else if (params.lidarModel == "linear" &&
+      ROS_INFO("%s: Set  %s  scan mapper.", MODULE_NAME, params.lidarModel.c_str());
+    else if (params.lidarModel == "linear" &&
       node.getParam("/loam/registration/min_vertical_angle", params.vAngleMin) &&
       node.getParam("/loam/registration/max_vertical_angle", params.vAngleMax) &&
       node.getParam("/loam/registration/n_scan_rings", params.nScanRings)) {
-    if (params.vAngleMin >= params.vAngleMax) {
-      ROS_ERROR("%s: Invalid vertical range (min >= max)", module_name);
-      validParams = false;
-    } else if (params.nScanRings < 2) {
-      ROS_ERROR("%s: Invalid number of scan rings (n < 2)", module_name);
-      validParams = false;
+      if (params.vAngleMin >= params.vAngleMax) {
+        ROS_ERROR("%s: Invalid vertical range (min >= max)", MODULE_NAME);
+        validParams = false;
+      } else if (params.nScanRings < 2) {
+        ROS_ERROR("%s: Invalid number of scan rings (n < 2)", MODULE_NAME);
+        validParams = false;
+      }
+      ROS_INFO("%s: Set linear scan mapper from %g to %g degrees with %d scan rings.", MODULE_NAME, params.vAngleMin, params.vAngleMax, params.nScanRings);
+    } else if (params.lidarModel == "continuous") {
+      ROS_INFO("%s: Set  %s  scan mapper.", MODULE_NAME, params.lidarModel.c_str());
+      validParams = true;
     }
-    ROS_INFO("%s: Set linear scan mapper from %g to %g degrees with %d scan rings.", module_name, params.vAngleMin, params.vAngleMax, params.nScanRings);
-  } else if (params.lidarModel == "continuous") {
-    validParams = true;
   }
+  else
+      validParams = false;
 
   if (!validParams) {
-    ROS_ERROR("%s: Invalid scan registration parameters", module_name);
-    ROS_ERROR("%s: Default VLP-16 registration model will be used", module_name);
+    ROS_ERROR("%s: Invalid scan registration parameters", MODULE_NAME);
+    ROS_ERROR("%s: Default VLP-16 registration model will be used", MODULE_NAME);
     params.lidarModel = "VLP-16";
   }
 
