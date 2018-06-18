@@ -36,8 +36,8 @@ loam: {
     map_filter_size: 0.6,
   },
 
-  log_results: true,
-  log_filename: "/home/alfredoso/Datasets/KITTI/benchmark/result_05_loam.txt",
+  log_results: false,
+  log_filename: "/home/yumisummer/KITTI/result_05_loam.txt",
 
-  publish_path: true,
+  publish_path: false,
 }
