@@ -93,10 +93,12 @@ private:
   bool _publishPath;
 
   nav_msgs::Odometry _laserOdometry2;         ///< latest integrated laser odometry message
+  nav_msgs::Odometry _laserOdometryFixed;
   nav_msgs::Path _pathMsg;
   tf::StampedTransform _laserOdometryTrans2;  ///< latest integrated laser odometry transformation
 
   ros::Publisher _pubLaserOdometry2;          ///< integrated laser odometry publisher
+  ros::Publisher _pubLaserOdometryFixed;          ///< integrated laser odometry publisher
   ros::Publisher _pubOdomToPath;
   tf::TransformBroadcaster _tfBroadcaster2;   ///< integrated laser odometry transformation broadcaster
 
