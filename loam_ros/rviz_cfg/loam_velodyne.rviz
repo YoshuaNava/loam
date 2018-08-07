@@ -498,7 +498,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.100000001
       Style: Flat Squares
-      Topic: /loam/laser_cloud_origin
+      Topic: /loam/origin_laser_cloud_reg
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -528,7 +528,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.100000001
       Style: Flat Squares
-      Topic: /loam/laser_cloud_reg_fixed
+      Topic: /loam/fixed_laser_cloud_registered
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true

@@ -5,7 +5,7 @@
 
 #include "loam_utils/math_utils.h"
 #include "loam_velodyne/MultiScanRegistration.h"
-#include "common.h"
+#include "loam_ros/common.h"
 
 
 std::unique_ptr<loam::MultiScanRegistration> multiScanRegistration;

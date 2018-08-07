@@ -7,7 +7,7 @@
 #include <tf/transform_broadcaster.h>
 
 #include "loam_velodyne/LaserOdometry.h"
-#include "common.h"
+#include "loam_ros/common.h"
 #include "loam_msgs/PoseUpdate.h"
 
 

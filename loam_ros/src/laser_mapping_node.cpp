@@ -8,7 +8,7 @@
 #include <tf/transform_broadcaster.h>
 
 #include "loam_velodyne/LaserMapping.h"
-#include "common.h"
+#include "loam_ros/common.h"
 #include "loam_msgs/PoseUpdate.h"
 
 
@@ -317,8 +317,8 @@ int main(int argc, char **argv)
   pubLaserCloudFullRes = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_registered", 2);
   pubOdomAftMapped = node.advertise<nav_msgs::Odometry> ("/aft_mapped_to_init", 5);
   pubLaserCloudSurroundFixed = node.advertise<sensor_msgs::PointCloud2> ("/loam/fixed_laser_cloud_surround", 1);
-  pubLaserCloudFullResFixed = node.advertise<sensor_msgs::PointCloud2> ("/loam/laser_cloud_reg_fixed", 2);
-  pubLaserCloudFullResOrigin = node.advertise<sensor_msgs::PointCloud2> ("/loam/laser_cloud_origin", 2);
+  pubLaserCloudFullResFixed = node.advertise<sensor_msgs::PointCloud2> ("/loam/fixed_laser_cloud_registered", 2);
+  pubLaserCloudFullResOrigin = node.advertise<sensor_msgs::PointCloud2> ("/loam/origin_laser_cloud_reg", 2);
   pubOdomAftMappedFixed = node.advertise<nav_msgs::Odometry> ("/loam/fixed_aft_mapped_to_init", 5);
   tfBroadcaster_ptr = new tf::TransformBroadcaster();
 
