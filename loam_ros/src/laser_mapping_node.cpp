@@ -15,11 +15,18 @@
 std::unique_ptr<loam::LaserMapping> laserMapping;
 
 nav_msgs::Odometry odomAftMapped;      ///< mapping odometry message
+nav_msgs::Odometry odomAftMappedFixed;      ///< TODO doc
+
+
 tf::StampedTransform aftMappedTrans;   ///< mapping odometry transformation
 
 ros::Publisher pubLaserCloudSurround;    ///< map cloud message publisher
 ros::Publisher pubLaserCloudFullRes;     ///< current full resolution cloud message publisher
 ros::Publisher pubOdomAftMapped;         ///< mapping odometry publisher
+ros::Publisher pubLaserCloudSurroundFixed;    ///< TODO doc
+ros::Publisher pubLaserCloudFullResFixed;     ///< TODO doc
+ros::Publisher pubLaserCloudFullResOrigin;     ///< TODO doc
+ros::Publisher pubOdomAftMappedFixed;       ///< TODO doc
 tf::TransformBroadcaster* tfBroadcaster_ptr;  ///< mapping odometry transform broadcaster
 
 ros::Subscriber subLaserCloudCornerLast;   ///< last corner cloud message subscriber
@@ -147,19 +154,7 @@ void publishResults()
   loam::Twist transformAftMapped = laserMapping->transformAftMapped();
   loam::Twist transformBefMapped = laserMapping->transformBefMapped();
   loam::Time timeLaserOdometry = laserMapping->timeLaserOdometry();
-  
-  // publish new map cloud according to the input output ratio
-  if(pubLaserCloudSurround.getNumSubscribers()) {
-
-    pcl::PointCloud<pcl::PointXYZI>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZI>());
-    if(laserMapping->generateMapCloud(map_cloud))
-      loam::publishCloudMsg(pubLaserCloudSurround, *map_cloud, ros::Time(timeLaserOdometry), "/camera_init");
-  }
-
-  // publish transformed full resolution input cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZI>());
-  if(laserMapping->generateRegisteredCloud(registered_cloud))
-    loam::publishCloudMsg(pubLaserCloudFullRes, *registered_cloud, ros::Time(timeLaserOdometry), "/camera_init");
+  ros::Time stamp = ros::Time(timeLaserOdometry);
 
   // publish odometry after mapped transformations
   geometry_msgs::Quaternion geoQuat = tf::createQuaternionMsgFromRollPitchYaw
@@ -167,7 +162,7 @@ void publishResults()
         -transformAftMapped.rot_x.rad(),
         -transformAftMapped.rot_y.rad());
 
-  odomAftMapped.header.stamp = ros::Time(timeLaserOdometry);
+  odomAftMapped.header.stamp = stamp;
   odomAftMapped.pose.pose.orientation.x = -geoQuat.y;
   odomAftMapped.pose.pose.orientation.y = -geoQuat.z;
   odomAftMapped.pose.pose.orientation.z = geoQuat.x;
@@ -183,12 +178,50 @@ void publishResults()
   odomAftMapped.twist.twist.linear.z = transformBefMapped.pos.z();
   pubOdomAftMapped.publish(odomAftMapped);
 
-  aftMappedTrans.stamp_ = ros::Time(timeLaserOdometry);
+  aftMappedTrans.stamp_ = stamp;
   aftMappedTrans.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
   aftMappedTrans.setOrigin(tf::Vector3(transformAftMapped.pos.x(),
                                         transformAftMapped.pos.y(),
                                         transformAftMapped.pos.z()));
   tfBroadcaster_ptr->sendTransform(aftMappedTrans);
+
+  // After mapped odometry message in XYZ coordinate frame
+  Eigen::Isometry3d T_odom = loam::convertOdometryToEigenIsometry(odomAftMapped);
+  Eigen::Matrix4d inv_T_odom = T_odom.matrix().inverse();
+  T_odom = loam::rot_loam.toRotationMatrix().inverse() * T_odom;
+  odomAftMappedFixed = loam::convertEigenIsometryToOdometry("/camera_init", T_odom, stamp);
+  pubOdomAftMappedFixed.publish(odomAftMappedFixed);
+
+  // publish new map cloud according to the input output ratio
+  if(pubLaserCloudSurround.getNumSubscribers() || pubLaserCloudSurroundFixed.getNumSubscribers()) {
+
+    pcl::PointCloud<pcl::PointXYZI>::Ptr map_cloud(new pcl::PointCloud<pcl::PointXYZI>()),
+                                         map_cloud_fixed(new pcl::PointCloud<pcl::PointXYZI>());
+    if(laserMapping->generateMapCloud(map_cloud)) {
+      loam::publishCloudMsg(pubLaserCloudSurround, *map_cloud, stamp, "/camera_init");
+
+      pcl::transformPointCloud(*map_cloud, *map_cloud_fixed, loam::T_fix_loam);
+      loam::publishCloudMsg(pubLaserCloudSurroundFixed, *map_cloud_fixed, stamp, "/camera_init");
+    }
+  }
+
+  // publish transformed full resolution input cloud
+  pcl::PointCloud<pcl::PointXYZI>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZI>()),
+                                       registered_cloud_fixed(new pcl::PointCloud<pcl::PointXYZI>()),
+                                       origin_cloud_fixed(new pcl::PointCloud<pcl::PointXYZI>());
+  if(laserMapping->generateRegisteredCloud(registered_cloud)) {
+    loam::publishCloudMsg(pubLaserCloudFullRes, *registered_cloud, stamp, "/camera_init");
+
+    // Registered and sensor-centered clouds in XYZ coordinate frame
+    pcl::transformPointCloud(*registered_cloud, *registered_cloud_fixed, loam::T_fix_loam);
+
+    pcl::transformPointCloud(*registered_cloud, *origin_cloud_fixed, inv_T_odom);
+    pcl::transformPointCloud(*origin_cloud_fixed, *origin_cloud_fixed, loam::T_fix_loam);
+
+    loam::publishCloudMsg(pubLaserCloudFullResFixed, *registered_cloud_fixed, stamp, "/camera_init");
+    loam::publishCloudMsg(pubLaserCloudFullResOrigin, *origin_cloud_fixed, stamp, "/camera_init");
+  }
+
 }
 
 
@@ -283,6 +316,10 @@ int main(int argc, char **argv)
   pubLaserCloudSurround = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_surround", 1);
   pubLaserCloudFullRes = node.advertise<sensor_msgs::PointCloud2> ("/laser_cloud_registered", 2);
   pubOdomAftMapped = node.advertise<nav_msgs::Odometry> ("/aft_mapped_to_init", 5);
+  pubLaserCloudSurroundFixed = node.advertise<sensor_msgs::PointCloud2> ("/loam/fixed_laser_cloud_surround", 1);
+  pubLaserCloudFullResFixed = node.advertise<sensor_msgs::PointCloud2> ("/loam/laser_cloud_reg_fixed", 2);
+  pubLaserCloudFullResOrigin = node.advertise<sensor_msgs::PointCloud2> ("/loam/laser_cloud_origin", 2);
+  pubOdomAftMappedFixed = node.advertise<nav_msgs::Odometry> ("/loam/fixed_aft_mapped_to_init", 5);
   tfBroadcaster_ptr = new tf::TransformBroadcaster();
 
   // subscribe to laser odometry topics

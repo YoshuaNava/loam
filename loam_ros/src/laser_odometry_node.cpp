@@ -14,12 +14,15 @@
 std::unique_ptr<loam::LaserOdometry> laserOdometry;
 
 nav_msgs::Odometry laserOdometryMsg;       ///< laser odometry message
+nav_msgs::Odometry laserOdometryFixedMsg;      ///< TODO doc
 tf::StampedTransform laserOdometryTrans;   ///< laser odometry transformation
 
 ros::Publisher pubLaserCloudCornerLast;  ///< last corner cloud message publisher
 ros::Publisher pubLaserCloudSurfLast;    ///< last surface cloud message publisher
 ros::Publisher pubLaserCloudFullRes;     ///< full resolution cloud message publisher
 ros::Publisher pubLaserOdometry;         ///< laser odometry publisher
+ros::Publisher pubLaserOdometryFixed;       ///< TODO doc
+ros::Publisher pubLaserCloudFullResFixed;     ///< TODO doc
 tf::TransformBroadcaster* tfBroadcaster_ptr;  ///< laser odometry transform broadcaster
 
 ros::Subscriber subCornerPointsSharp;      ///< sharp corner cloud message subscriber
@@ -184,14 +187,23 @@ void publishResults()
   laserOdometryTrans.setOrigin(tf::Vector3( transformSum.pos.x(), transformSum.pos.y(), transformSum.pos.z()) );
   tfBroadcaster_ptr->sendTransform(laserOdometryTrans);
 
+  // Laser odometry message in XYZ coordinate frame
+  Eigen::Isometry3d T_odom = loam::convertOdometryToEigenIsometry(laserOdometryMsg);
+  T_odom = loam::rot_loam.toRotationMatrix().inverse() * T_odom;
+  laserOdometryFixedMsg = loam::convertEigenIsometryToOdometry("/camera_init", T_odom, sweepTime);
+  pubLaserOdometryFixed.publish(laserOdometryFixedMsg);
 
   // publish transformed full resolution input cloud
-  pcl::PointCloud<pcl::PointXYZI>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZI>());
+  pcl::PointCloud<pcl::PointXYZI>::Ptr registered_cloud(new pcl::PointCloud<pcl::PointXYZI>()),
+                                       registered_cloud_fixed(new pcl::PointCloud<pcl::PointXYZI>());
   if(laserOdometry->generateRegisteredCloud(registered_cloud)) {
 
     loam::publishCloudMsg(pubLaserCloudCornerLast, *laserOdometry->lastCornerCloud(), sweepTime, "/camera");
     loam::publishCloudMsg(pubLaserCloudSurfLast, *laserOdometry->lastSurfaceCloud(), sweepTime, "/camera");
     loam::publishCloudMsg(pubLaserCloudFullRes, *registered_cloud, sweepTime, "/camera");
+
+    pcl::transformPointCloud(*registered_cloud, *registered_cloud_fixed, loam::T_fix_loam);
+    loam::publishCloudMsg(pubLaserCloudFullResFixed, *registered_cloud_fixed, sweepTime, "/camera_init");
   }
 }
 
@@ -274,6 +286,8 @@ int main(int argc, char **argv)
   pubLaserCloudSurfLast   = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf_last", 2);
   pubLaserCloudFullRes    = node.advertise<sensor_msgs::PointCloud2>("/laser_cloud_odom", 2);
   pubLaserOdometry        = node.advertise<nav_msgs::Odometry>("/laser_odom_to_init", 5);
+  pubLaserCloudFullResFixed    = node.advertise<sensor_msgs::PointCloud2>("/loam/fixed_laser_cloud_odom", 2);
+  pubLaserOdometryFixed        = node.advertise<nav_msgs::Odometry>("/loam/fixed_laser_odom_to_init", 5);
   tfBroadcaster_ptr = new tf::TransformBroadcaster();
 
   // subscribe to scan registration topics

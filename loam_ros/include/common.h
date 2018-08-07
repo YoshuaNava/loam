@@ -99,14 +99,15 @@ Eigen::Isometry3d convertOdometryToEigenIsometry(const nav_msgs::Odometry odom_m
 
 // TODO doc
 nav_msgs::Odometry convertEigenIsometryToOdometry(const std::string frame_id,
-                                                  const Eigen::Isometry3d& odom) {
+                                                  const Eigen::Isometry3d& odom,
+                                                  const ros::Time stamp = ros::Time::now()) {
   nav_msgs::Odometry odom_msg;
 
   Eigen::Vector3d pos = odom.translation();
   Eigen::Quaterniond rot(odom.rotation());
 
-  odom_msg.header.stamp = ros::Time::now();
-  odom_msg.header.frame_id = "map";
+  odom_msg.header.stamp = stamp;
+  odom_msg.header.frame_id = frame_id;
   odom_msg.pose.pose.position.x = pos.x();
   odom_msg.pose.pose.position.y = pos.y();
   odom_msg.pose.pose.position.z = pos.z();

@@ -93,20 +93,20 @@ private:
   bool _publishPath;
 
   nav_msgs::Odometry _laserOdometry2;         ///< latest integrated laser odometry message
-  nav_msgs::Odometry _laserOdometryFixed;
-  nav_msgs::Path _pathMsg;
+  nav_msgs::Odometry _integratedOdometryFixed;      ///< TODO doc
+  nav_msgs::Path _pathMsg;                          ///< TODO doc
   tf::StampedTransform _laserOdometryTrans2;  ///< latest integrated laser odometry transformation
 
   ros::Publisher _pubLaserOdometry2;          ///< integrated laser odometry publisher
-  ros::Publisher _pubLaserOdometryFixed;          ///< integrated laser odometry publisher
-  ros::Publisher _pubOdomToPath;
+  ros::Publisher _pubIntegratedOdometryFixed;       ///< TODO doc
+  ros::Publisher _pubOdomToPath;                    ///< TODO doc
   tf::TransformBroadcaster _tfBroadcaster2;   ///< integrated laser odometry transformation broadcaster
 
   ros::Subscriber _subLaserOdometry;    ///< (high frequency) laser odometry subscriber
   ros::Subscriber _subOdomAftMapped;    ///< (low frequency) mapping odometry subscriber
 
-  ros::ServiceServer reset_service_;
-  ros::ServiceServer pose_correction_service_;
+  ros::ServiceServer reset_service_;                ///< TODO doc
+  ros::ServiceServer pose_correction_service_;      ///< TODO doc
 };
 
 } // end namespace loam

@@ -63,7 +63,7 @@ bool TransformMaintenanceRos::setup(ros::NodeHandle &node, ros::NodeHandle &priv
   
   // advertise integrated laser odometry topic
   _pubLaserOdometry2 = node.advertise<nav_msgs::Odometry> ("/integrated_to_init", 5);
-  _pubLaserOdometryFixed = node.advertise<nav_msgs::Odometry> ("/fixed_integrated_to_init", 5);
+  _pubIntegratedOdometryFixed = node.advertise<nav_msgs::Odometry> ("/loam/fixed_integrated_to_init", 5);
 
   if(_publishPath)
     _pubOdomToPath = node.advertise<nav_msgs::Path> ("/odom_to_path", 2, true);
@@ -145,10 +145,11 @@ void TransformMaintenanceRos::publishAndLogResults(const float* transform, const
   _laserOdometry2.pose.pose.position.z = transform[5];
   _pubLaserOdometry2.publish(_laserOdometry2);
 
+  // Integrated odometry message in XYZ coordinate frame
   Eigen::Isometry3d T_odom = convertOdometryToEigenIsometry(_laserOdometry2);
   T_odom = rot_loam.toRotationMatrix().inverse() * T_odom;
-  _laserOdometryFixed = convertEigenIsometryToOdometry("/camera_init", T_odom);
-  _pubLaserOdometryFixed.publish(_laserOdometryFixed);
+  _integratedOdometryFixed = convertEigenIsometryToOdometry("/camera_init", T_odom, stamp);
+  _pubIntegratedOdometryFixed.publish(_integratedOdometryFixed);
 
   _laserOdometryTrans2.stamp_ = stamp;
   _laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
