@@ -188,7 +188,8 @@ void publishResults()
   // After mapped odometry message in XYZ coordinate frame
   Eigen::Isometry3d T_odom = loam::convertOdometryToEigenIsometry(odomAftMapped);
   Eigen::Matrix4d inv_T_odom = T_odom.matrix().inverse();
-  T_odom = loam::rot_loam.toRotationMatrix().inverse() * T_odom;
+  T_odom = loam::rot_conv_loam.toRotationMatrix().inverse() * T_odom;
+  T_odom.linear() *= loam::rot_fix_loam.toRotationMatrix();
   odomAftMappedFixed = loam::convertEigenIsometryToOdometry("/camera_init", T_odom, stamp);
   pubOdomAftMappedFixed.publish(odomAftMappedFixed);
 
@@ -200,7 +201,7 @@ void publishResults()
     if(laserMapping->generateMapCloud(map_cloud)) {
       loam::publishCloudMsg(pubLaserCloudSurround, *map_cloud, stamp, "/camera_init");
 
-      pcl::transformPointCloud(*map_cloud, *map_cloud_fixed, loam::T_fix_loam);
+      pcl::transformPointCloud(*map_cloud, *map_cloud_fixed, loam::T_conv_loam);
       loam::publishCloudMsg(pubLaserCloudSurroundFixed, *map_cloud_fixed, stamp, "/camera_init");
     }
   }
@@ -213,10 +214,10 @@ void publishResults()
     loam::publishCloudMsg(pubLaserCloudFullRes, *registered_cloud, stamp, "/camera_init");
 
     // Registered and sensor-centered clouds in XYZ coordinate frame
-    pcl::transformPointCloud(*registered_cloud, *registered_cloud_fixed, loam::T_fix_loam);
+    pcl::transformPointCloud(*registered_cloud, *registered_cloud_fixed, loam::T_conv_loam);
 
     pcl::transformPointCloud(*registered_cloud, *origin_cloud_fixed, inv_T_odom);
-    pcl::transformPointCloud(*origin_cloud_fixed, *origin_cloud_fixed, loam::T_fix_loam);
+    pcl::transformPointCloud(*origin_cloud_fixed, *origin_cloud_fixed, loam::T_conv_loam);
 
     loam::publishCloudMsg(pubLaserCloudFullResFixed, *registered_cloud_fixed, stamp, "/camera_init");
     loam::publishCloudMsg(pubLaserCloudFullResOrigin, *origin_cloud_fixed, stamp, "/camera_init");

@@ -189,7 +189,8 @@ void publishResults()
 
   // Laser odometry message in XYZ coordinate frame
   Eigen::Isometry3d T_odom = loam::convertOdometryToEigenIsometry(laserOdometryMsg);
-  T_odom = loam::rot_loam.toRotationMatrix().inverse() * T_odom;
+  T_odom = loam::rot_conv_loam.toRotationMatrix().inverse() * T_odom;
+  T_odom.linear() *= loam::rot_fix_loam.toRotationMatrix();
   laserOdometryFixedMsg = loam::convertEigenIsometryToOdometry("/camera_init", T_odom, sweepTime);
   pubLaserOdometryFixed.publish(laserOdometryFixedMsg);
 
@@ -202,7 +203,7 @@ void publishResults()
     loam::publishCloudMsg(pubLaserCloudSurfLast, *laserOdometry->lastSurfaceCloud(), sweepTime, "/camera");
     loam::publishCloudMsg(pubLaserCloudFullRes, *registered_cloud, sweepTime, "/camera");
 
-    pcl::transformPointCloud(*registered_cloud, *registered_cloud_fixed, loam::T_fix_loam);
+    pcl::transformPointCloud(*registered_cloud, *registered_cloud_fixed, loam::T_conv_loam);
     loam::publishCloudMsg(pubLaserCloudFullResFixed, *registered_cloud_fixed, sweepTime, "/camera_init");
   }
 }

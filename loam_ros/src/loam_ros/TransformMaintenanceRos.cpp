@@ -147,7 +147,8 @@ void TransformMaintenanceRos::publishAndLogResults(const float* transform, const
 
   // Integrated odometry message in XYZ coordinate frame
   Eigen::Isometry3d T_odom = convertOdometryToEigenIsometry(_laserOdometry2);
-  T_odom = rot_loam.toRotationMatrix().inverse() * T_odom;
+  T_odom = rot_conv_loam.toRotationMatrix().inverse() * T_odom;
+  T_odom.linear() *= rot_fix_loam.toRotationMatrix();
   _integratedOdometryFixed = convertEigenIsometryToOdometry("/camera_init", T_odom, stamp);
   _pubIntegratedOdometryFixed.publish(_integratedOdometryFixed);
 

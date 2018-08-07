@@ -48,8 +48,14 @@ namespace loam {
 Eigen::Matrix4d getTransformFromQuaternion(const Eigen::Quaterniond q);
 
 // const Eigen::Quaterniond rot_loam(0.7071, -0.7071, 0, 0);
-const Eigen::Quaterniond rot_loam(0.0005631, -0.0005631, 0.7071065, 0.7071065);
-const Eigen::Matrix4d T_fix_loam = getTransformFromQuaternion(rot_loam.inverse());
+const Eigen::Quaterniond rot_conv_loam(0.0005631, -0.0005631, 0.7071065, 0.7071065);
+const Eigen::Quaterniond rot_fix_loam = Eigen::AngleAxisd(-1.5707, Eigen::Vector3d::UnitX())
+                                  * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
+                                  * Eigen::AngleAxisd(-1.5707, Eigen::Vector3d::UnitZ());
+const Eigen::Matrix4d T_conv_loam = getTransformFromQuaternion(rot_conv_loam.inverse());
+// const Eigen::Matrix4d T_fix_loam = getTransformFromQuaternion(rot_fix_loam.inverse());
+// const Eigen::Matrix4d inv_T_fix_loam = T_fix_loam.inverse();
+// const Eigen::Matrix4d inv_T_conv_loam = T_fix_loam.inverse();
 
 /** \brief Construct a new point cloud message from the specified information and publish it via the given publisher.
  *
