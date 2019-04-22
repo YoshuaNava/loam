@@ -6,17 +6,21 @@
   <arg name="rviz" default="true" />
   <rosparam command="load" file="$(find loam_ros)/config/loam_velodyne/default_params.yaml"/>
 
+  <!-- Scan registration -->
   <node pkg="loam_ros" type="multiScanRegistration" name="multiScanRegistration" output="screen">
     <remap from="/multi_scan_points" to="$(arg lidar_topic)" />
     <remap from="/imu/data" to="$(arg imu_topic)" />
   </node>
 
+  <!-- Laser odometry -->
   <node pkg="loam_ros" type="laserOdometry" name="laserOdometry" output="screen" respawn="true" />
 
+  <!-- Laser mapping -->
   <node pkg="loam_ros" type="laserMapping" name="laserMapping" output="screen" >
     <remap from="/imu/data" to="$(arg imu_topic)" />
   </node>
 
+  <!-- Transform maintenance -->
   <node pkg="loam_ros" type="transformMaintenance" name="transformMaintenance" output="screen" />
 
   <group if="$(arg rviz)">

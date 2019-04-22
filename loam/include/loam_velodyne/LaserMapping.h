@@ -159,7 +159,7 @@ protected:
   void pointAssociateTobeMapped(const pcl::PointXYZI& pi, pcl::PointXYZI& po);
 
 
-private:
+protected:
 
   size_t toIndex(int i, int j, int k) const
   {

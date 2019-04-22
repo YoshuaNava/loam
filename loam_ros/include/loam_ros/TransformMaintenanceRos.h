@@ -86,24 +86,26 @@ public:
   // TODO doc
   void publishPath(const Eigen::Matrix3d& rot, const Eigen::Vector3d& trans, const ros::Time stamp);
 
-private:
+protected:
   TransformMaintenance _transformMaintainer;
+
   bool _logResults;
   std::string _logFilename;
+
   bool _publishPath;
-
-  nav_msgs::Odometry _laserOdometry2;         ///< latest integrated laser odometry message
-  nav_msgs::Odometry _integratedOdometryFixed;      ///< TODO doc
   nav_msgs::Path _pathMsg;                          ///< TODO doc
-  tf::StampedTransform _laserOdometryTrans2;  ///< latest integrated laser odometry transformation
-
-  ros::Publisher _pubLaserOdometry2;          ///< integrated laser odometry publisher
-  ros::Publisher _pubIntegratedOdometryFixed;       ///< TODO doc
   ros::Publisher _pubOdomToPath;                    ///< TODO doc
-  tf::TransformBroadcaster _tfBroadcaster2;   ///< integrated laser odometry transformation broadcaster
 
-  ros::Subscriber _subLaserOdometry;    ///< (high frequency) laser odometry subscriber
-  ros::Subscriber _subOdomAftMapped;    ///< (low frequency) mapping odometry subscriber
+  nav_msgs::Odometry _laserOdometry2;               ///< latest integrated laser odometry message
+  nav_msgs::Odometry _integratedOdometryFixed;      ///< TODO doc
+  tf::StampedTransform _laserOdometryTrans2;        ///< latest integrated laser odometry transformation
+
+  ros::Publisher _pubLaserOdometry2;                ///< integrated laser odometry publisher
+  ros::Publisher _pubIntegratedOdometryFixed;       ///< TODO doc
+  tf::TransformBroadcaster _tfBroadcaster2;         ///< integrated laser odometry transformation broadcaster
+
+  ros::Subscriber _subLaserOdometry;                ///< (high frequency) laser odometry subscriber
+  ros::Subscriber _subOdomAftMapped;                ///< (low frequency) mapping odometry subscriber
 
   ros::ServiceServer reset_service_;                ///< TODO doc
   ros::ServiceServer pose_correction_service_;      ///< TODO doc

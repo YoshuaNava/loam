@@ -87,7 +87,7 @@ public:
   static inline MultiScanMapper Velodyne_HDL_64E() { return MultiScanMapper(-24.9f, 2, 64); };
 
 
-private:
+protected:
   float _lowerBound;      ///< the vertical angle of the first scan ring
   float _upperBound;      ///< the vertical angle of the last scan ring
   uint16_t _nScanRings;   ///< number of scan rings
@@ -121,7 +121,7 @@ protected:
   int _systemDelay;             ///< system startup delay counter
   MultiScanMapper _scanMapper;  ///< mapper for mapping vertical point angles to scan ring IDs
 
-private:
+protected:
   static const int SYSTEM_DELAY = 0;
 };
 

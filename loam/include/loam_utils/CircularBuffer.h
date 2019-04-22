@@ -118,7 +118,7 @@ public:
     }
   }
 
-private:
+protected:
   size_t _capacity;   ///< buffer capacity
   size_t _size;       ///< current buffer size
   size_t _startIdx;   ///< current start index

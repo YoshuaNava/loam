@@ -175,7 +175,7 @@ protected:
                     const size_t& scanIdx);
 
 
-private:
+protected:
   /** \brief Try to interpolate the IMU state for the given time.
    *
    * @param relTime the time relative to the scan time

@@ -768,7 +768,7 @@ public:
     inline void assign (const T& value) { for (size_t i=0;i<N;i++) elems[i]=value; }
     // assign (compatible with std::vector's one) (by JLBC for MRPT)
     void assign (const size_t n, const T& value) { assert(N==n); for (size_t i=0;i<N;i++) elems[i]=value; }
-private:
+protected:
     // check range (may be private because it is static)
     static void rangecheck (size_type i) { if (i >= size()) { throw std::out_of_range("CArray<>: index out of range"); } }
 }; // end of CArray
@@ -1155,7 +1155,7 @@ public:
 template <typename Distance, class DatasetAdaptor, int DIM = -1, typename IndexType = size_t>
 class KDTreeSingleIndexAdaptor : public KDTreeBaseClass<KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>, Distance, DatasetAdaptor, DIM, IndexType>
 {
-private:
+protected:
     /** Hidden copy constructor, to disallow copying indices (Not implemented) */
     KDTreeSingleIndexAdaptor(const KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>&);
 public:
@@ -1783,7 +1783,7 @@ public:
         return index;
     }
 
-private:
+protected:
     /** finds position of least significant unset bit */
     int First0Bit(IndexType num)
     {
@@ -1926,7 +1926,7 @@ struct KDTreeEigenMatrixAdaptor
         index = new index_t( dims, *this /* adaptor */, nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size ) );
         index->buildIndex();
     }
-private:
+protected:
     /** Hidden copy constructor, to disallow copying this class (Not implemented) */
     KDTreeEigenMatrixAdaptor(const self_t&);
 public:

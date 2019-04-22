@@ -59,7 +59,7 @@ public:
 
   float sin() const { return _sin; }
 
-private:
+protected:
   float _radian;    ///< angle value in radian
   float _cos;       ///< cosine of the angle
   float _sin;       ///< sine of the angle

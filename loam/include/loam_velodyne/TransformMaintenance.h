@@ -74,7 +74,7 @@ protected:
   void transformAssociateToMap();
 
 
-private:
+protected:
   std::mutex main_thread_mutex_;
 
   float _transformSum[6];

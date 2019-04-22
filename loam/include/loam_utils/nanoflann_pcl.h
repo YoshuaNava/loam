@@ -86,7 +86,7 @@ public:
     int radiusSearch (const PointT &point, double radius, std::vector<int> &k_indices,
                       std::vector<float> &k_sqr_distances) const;
 
-private:
+protected:
 
     nanoflann::SearchParams _params;
 

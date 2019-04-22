@@ -219,7 +219,7 @@ protected:
                           Angle &ox, Angle &oy, Angle &oz);
   
 
-private:
+protected:
 
   LaserOdometryParams _params;
 
